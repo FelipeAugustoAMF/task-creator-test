@@ -1,0 +1,105 @@
+"use client";
+
+import {
+  Anchor,
+  Badge,
+  Card,
+  Group,
+  Stack,
+  Tabs,
+  Text,
+  Title,
+} from "@mantine/core";
+import Link from "next/link";
+import React from "react";
+
+import { PromptRunViewer } from "@/components/PromptRunViewer";
+import { ScoringRunRow, TaskRow } from "@/lib/tasks/types";
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }) {
+  const { task } = props;
+
+  return (
+    <Stack gap="md">
+      <Group justify="space-between" align="flex-start">
+        <Stack gap={2}>
+          <Anchor component={Link} href="/dashboard" size="sm">
+            ← Back to Tasks
+          </Anchor>
+          <Title order={2}>{task.title}</Title>
+          <Text c="dimmed" size="sm">
+            {formatDate(task.created_at)}
+          </Text>
+        </Stack>
+
+        <Group>
+          <Badge color={task.status === "done" ? "indigo" : "red"} variant="light">
+            {task.status}
+          </Badge>
+          {task.status === "done" && (
+            <Badge color="gray" variant="light">
+              score {task.score}
+            </Badge>
+          )}
+        </Group>
+      </Group>
+
+      <Tabs defaultValue="details">
+        <Tabs.List>
+          <Tabs.Tab value="details">Details</Tabs.Tab>
+          <Tabs.Tab value="logs">Prompt Logs</Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value="details" pt="md">
+          <Card withBorder>
+            <Stack gap="sm">
+              <Group gap="xs">
+                <Text fw={600}>Category:</Text>
+                <Text>{task.category || "—"}</Text>
+              </Group>
+              <Group gap="xs">
+                <Text fw={600}>Confidence:</Text>
+                <Text>
+                  {typeof task.confidence === "number" ? task.confidence.toFixed(2) : "—"}
+                </Text>
+              </Group>
+              <Group gap="xs" align="flex-start">
+                <Text fw={600}>Tags:</Text>
+                <Group gap={6}>
+                  {task.tags?.length ? (
+                    task.tags.map((t) => (
+                      <Badge key={t} size="sm" variant="outline">
+                        {t}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Text c="dimmed">—</Text>
+                  )}
+                </Group>
+              </Group>
+              <Group gap="xs" align="flex-start">
+                <Text fw={600}>Rationale:</Text>
+                <Text style={{ flex: 1 }}>{task.rationale || "—"}</Text>
+              </Group>
+              <Stack gap={4}>
+                <Text fw={600}>Description</Text>
+                <Text style={{ whiteSpace: "pre-wrap" }}>{task.description}</Text>
+              </Stack>
+            </Stack>
+          </Card>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="logs" pt="md">
+          <PromptRunViewer runs={props.runs} />
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
+  );
+}
+
