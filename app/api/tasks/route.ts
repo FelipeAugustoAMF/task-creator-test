@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { requireAppApiKey } from "@/lib/api/auth";
+import { coerceAllowedTag } from "@/lib/scoring/taxonomy";
 import { createTaskAndScore, listTasks } from "@/lib/tasks/service";
 
 export const runtime = "nodejs";
@@ -71,6 +72,14 @@ export async function GET(request: Request) {
     const from = searchParams.get("from") || undefined;
     const to = searchParams.get("to") || undefined;
 
+    const tagsParam = searchParams.get("tags") || undefined;
+    const tags = tagsParam
+      ? tagsParam
+          .split(",")
+          .map((t) => coerceAllowedTag(t))
+          .filter((t): t is string => Boolean(t))
+      : undefined;
+
     const { items, total } = await listTasks({
       page,
       pageSize,
@@ -80,6 +89,7 @@ export async function GET(request: Request) {
       search,
       from,
       to,
+      tags,
     });
 
     return Response.json({ items, total, page, pageSize });

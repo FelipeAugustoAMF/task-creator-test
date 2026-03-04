@@ -46,11 +46,11 @@ create table if not exists public.scoring_runs (
 
 create index if not exists scoring_runs_task_id_idx on public.scoring_runs (task_id);
 
--- Seed a default prompt template (simple "versioning" via prompts.version) - default v2
+-- Seed a default prompt template (simple "versioning" via prompts.version) - default v3
 insert into public.prompts (name, version, template)
 select
   'default',
-  2,
+  3,
   $prompt$
 Você é "The Hybrid Architect", uma IA que prioriza tarefas (pessoais ou profissionais) com base em impacto, urgência, esforço e risco.
 
@@ -83,15 +83,18 @@ Definições de category:
 - pessoal: tarefas pessoais/rotina fora do trabalho.
 - outro: quando não se encaixar bem.
 
+Tags permitidas (escolha somente desta lista; máximo 8; use exatamente como escrito):
+{{allowed_tags}}
+
 Regras:
 - score: inteiro de 1 a 10.
 - category: use somente um dos valores permitidos acima (em português).
-- tags: no máximo 8 itens; strings curtas; em português brasileiro; sem frases.
+- tags: no máximo 8 itens; use somente tags permitidas; não invente tags fora da lista.
 - rationale: 1-2 frases; <= 300 caracteres; em português brasileiro.
 - confidence: número entre 0 e 1.
 - Não traduza os nomes das chaves do JSON: score, category, tags, rationale, confidence.
 - Mesmo que a tarefa esteja em outro idioma, gere tags e rationale em português brasileiro.
 $prompt$
 where not exists (
-  select 1 from public.prompts where name = 'default' and version = 2
+  select 1 from public.prompts where name = 'default' and version = 3
 );

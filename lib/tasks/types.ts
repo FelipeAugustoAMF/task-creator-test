@@ -34,3 +34,8 @@ export type ScoringRunRow = {
   created_at: string;
 };
 
+export type ScoringRunTaskRef = { id: string; title: string };
+
+export type ScoringRunWithTaskRow = ScoringRunRow & {
+  task: ScoringRunTaskRef | null;
+};

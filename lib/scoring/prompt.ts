@@ -2,6 +2,7 @@ export type PromptRenderData = {
   task_id: string;
   title: string;
   description: string;
+  allowed_tags: string;
 };
 
 export function renderPrompt(template: string, data: PromptRenderData) {
@@ -10,4 +11,3 @@ export function renderPrompt(template: string, data: PromptRenderData) {
     return typeof value === "string" ? value : match;
   });
 }
-

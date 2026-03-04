@@ -14,27 +14,19 @@ import Link from "next/link";
 import React from "react";
 
 import { PromptRunViewer } from "@/components/PromptRunViewer";
+import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
 import { ScoringRunRow, TaskRow } from "@/lib/tasks/types";
 
-const categoryLabelMap: Record<string, string> = {
-  incident: "Incidente",
-  bug: "Defeito",
-  feature: "Melhoria",
-  ops: "Manutenção",
-  finance: "Financeiro",
-  support: "Suporte",
-  other: "Outro",
-
-  incidente: "Incidente",
-  defeito: "Defeito",
-  melhoria: "Melhoria",
-  manutenção: "Manutenção",
-  segurança: "Segurança",
-  financeiro: "Financeiro",
-  suporte: "Suporte",
-  administrativo: "Administrativo",
-  pessoal: "Pessoal",
-  outro: "Outro",
+const legacyCategoryMap: Record<string, string> = {
+  incident: "incidente",
+  bug: "defeito",
+  feature: "melhoria",
+  ops: "manutenção",
+  finance: "financeiro",
+  support: "suporte",
+  other: "outro",
+  manutencao: "manutenção",
+  seguranca: "segurança",
 };
 
 const statusLabelMap: Record<string, string> = {
@@ -49,7 +41,13 @@ function formatDate(value: string) {
 }
 
 function formatCategory(value: string) {
-  return categoryLabelMap[value] || value;
+  const key = value.trim().toLowerCase();
+  const canonical = legacyCategoryMap[key] ?? key;
+  return (SCORING_CATEGORY_LABELS as Record<string, string>)[canonical] || value;
+}
+
+function formatTag(value: string) {
+  return (ALLOWED_TAG_LABELS as Record<string, string>)[value] || value;
 }
 
 export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }) {
@@ -105,7 +103,7 @@ export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }
                   {task.tags?.length ? (
                     task.tags.map((t) => (
                       <Badge key={t} size="sm" variant="outline">
-                        {t}
+                        {formatTag(t)}
                       </Badge>
                     ))
                   ) : (

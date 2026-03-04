@@ -46,7 +46,7 @@ Regras importantes:
 1. Crie um projeto no Supabase.
 2. Vá em **SQL Editor** e rode o arquivo `supabase/schema.sql`.
 
-Esse script cria as tabelas e faz seed de um prompt `default` (version 2).
+Esse script cria as tabelas e faz seed de um prompt `default` (version 3).
 
 ## 4) Testar endpoints (curl)
 
@@ -75,6 +75,13 @@ curl.exe -X POST "http://localhost:3000/api/tasks" `
 
 ```bash
 curl "http://localhost:3000/api/tasks?page=1&pageSize=20&category=defeito&scoreMin=7&search=checkout" \
+  -H "Authorization: Bearer $APP_API_KEY"
+```
+
+Exemplo com filtros de data e tags:
+
+```bash
+curl "http://localhost:3000/api/tasks?page=1&pageSize=20&from=2026-03-01&to=2026-03-31&tags=urgente,bloqueante" \
   -H "Authorization: Bearer $APP_API_KEY"
 ```
 

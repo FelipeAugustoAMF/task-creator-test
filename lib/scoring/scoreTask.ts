@@ -2,6 +2,7 @@ import "server-only";
 
 import { getOpenAIClient } from "@/lib/openai/client";
 import { parseAndNormalizeScoringOutput, ScoringOutput } from "@/lib/scoring/schema";
+import { ALLOWED_TAG_VALUES, SCORING_CATEGORY_VALUES } from "@/lib/scoring/taxonomy";
 
 const outputJsonSchema = {
   type: "object",
@@ -10,25 +11,18 @@ const outputJsonSchema = {
     score: { type: "integer", minimum: 1, maximum: 10 },
     category: {
       type: "string",
-      enum: [
-        "incidente",
-        "defeito",
-        "melhoria",
-        "manutenção",
-        "segurança",
-        "financeiro",
-        "suporte",
-        "administrativo",
-        "pessoal",
-        "outro",
-      ],
+      enum: [...SCORING_CATEGORY_VALUES],
     },
-    tags: { type: "array", items: { type: "string" }, maxItems: 8 },
+    tags: {
+      type: "array",
+      items: { type: "string", enum: [...ALLOWED_TAG_VALUES] },
+      maxItems: 8,
+    },
     rationale: { type: "string" },
     confidence: { type: "number", minimum: 0, maximum: 1 },
   },
   required: ["score", "category", "tags", "rationale", "confidence"],
-} as const;
+} satisfies Record<string, unknown>;
 
 export type ScoreTaskResult =
   | {
@@ -101,7 +95,7 @@ export async function scoreTaskWithOpenAI(params: {
 
   const attemptPrompts = [
     params.renderedPrompt,
-    `${params.renderedPrompt}\n\nIMPORTANTE: Responda SOMENTE com JSON válido. JSON VÁLIDO APENAS. Sem markdown. Sem texto extra. Escreva os valores textuais em português brasileiro (pt-BR) e use 'category' em português (ex.: incidente, defeito, melhoria, manutenção, segurança, financeiro, suporte, administrativo, pessoal, outro).`,
+    `${params.renderedPrompt}\n\nIMPORTANTE: Responda SOMENTE com JSON válido. JSON VÁLIDO APENAS. Sem markdown. Sem texto extra. Escreva os valores textuais em português brasileiro (pt-BR). Use 'category' em português (somente valores permitidos). Para 'tags', use SOMENTE as tags permitidas listadas no prompt (não invente tags fora da lista).`,
   ];
 
   let lastRawResponse = "";

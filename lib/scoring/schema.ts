@@ -1,17 +1,8 @@
 import { z } from "zod";
 
-export const scoringCategoryValues = [
-  "incidente",
-  "defeito",
-  "melhoria",
-  "manutenção",
-  "segurança",
-  "financeiro",
-  "suporte",
-  "administrativo",
-  "pessoal",
-  "outro",
-] as const;
+import { coerceAllowedTag, SCORING_CATEGORY_VALUES } from "@/lib/scoring/taxonomy";
+
+export const scoringCategoryValues = SCORING_CATEGORY_VALUES;
 
 export type ScoringCategory = (typeof scoringCategoryValues)[number];
 
@@ -49,9 +40,11 @@ function normalizeTags(input: unknown): string[] {
 
   const deduped = new Set<string>();
   for (const tag of items) {
-    const cleaned = tag.trim().replace(/\s+/g, " ");
+    const cleaned = tag.trim();
     if (!cleaned) continue;
-    deduped.add(cleaned.slice(0, 32));
+    const allowed = coerceAllowedTag(cleaned);
+    if (!allowed) continue;
+    deduped.add(allowed);
     if (deduped.size >= 8) break;
   }
 

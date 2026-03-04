@@ -7,8 +7,9 @@ import {
 } from "@/lib/scoring/defaultPrompt";
 import { renderPrompt } from "@/lib/scoring/prompt";
 import { scoreTaskWithOpenAI } from "@/lib/scoring/scoreTask";
+import { formatAllowedTagsForPrompt } from "@/lib/scoring/taxonomy";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { PromptRow, ScoringRunRow, TaskRow } from "@/lib/tasks/types";
+import { PromptRow, ScoringRunRow, ScoringRunWithTaskRow, TaskRow } from "@/lib/tasks/types";
 
 export type CreateTaskInput = {
   title: string;
@@ -88,11 +89,18 @@ export async function createTaskAndScore(input: CreateTaskInput): Promise<Create
     };
   }
 
-  const renderedPrompt = renderPrompt(typedPrompt.template, {
+  const allowedTags = formatAllowedTagsForPrompt();
+
+  let renderedPrompt = renderPrompt(typedPrompt.template, {
     task_id: taskId,
     title: input.title,
     description: input.description,
+    allowed_tags: allowedTags,
   });
+
+  if (!typedPrompt.template.includes("{{allowed_tags}}")) {
+    renderedPrompt = `${renderedPrompt}\n\nTags permitidas (escolha somente desta lista; máximo 8; use exatamente como escrito):\n${allowedTags}`;
+  }
 
   const scoreResult = await scoreTaskWithOpenAI({ renderedPrompt });
 
@@ -159,7 +167,19 @@ export type ListTasksParams = {
   search?: string;
   from?: string;
   to?: string;
+  tags?: string[];
 };
+
+function toIsoBoundary(value: string, boundary: "start" | "end") {
+  const v = value.trim();
+  if (!v) return "";
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    return boundary === "start" ? `${v}T00:00:00.000Z` : `${v}T23:59:59.999Z`;
+  }
+
+  return v;
+}
 
 export async function listTasks(params: ListTasksParams): Promise<{
   items: TaskRow[];
@@ -201,8 +221,19 @@ export async function listTasks(params: ListTasksParams): Promise<{
     query = query.lte("score", params.scoreMax);
   }
 
-  if (params.from) query = query.gte("created_at", params.from);
-  if (params.to) query = query.lte("created_at", params.to);
+  if (params.tags?.length) {
+    query = query.overlaps("tags", params.tags.slice(0, 20));
+  }
+
+  if (params.from) {
+    const fromIso = toIsoBoundary(params.from, "start");
+    if (fromIso) query = query.gte("created_at", fromIso);
+  }
+
+  if (params.to) {
+    const toIso = toIsoBoundary(params.to, "end");
+    if (toIso) query = query.lte("created_at", toIso);
+  }
 
   const { data, error, count } = await query
     .order("created_at", { ascending: false })
@@ -239,6 +270,51 @@ export async function listTaskRuns(taskId: string): Promise<ScoringRunRow[]> {
 
   if (error) throw new Error(error.message);
   return (data as ScoringRunRow[]) ?? [];
+}
+
+export type ListScoringRunsParams = {
+  page: number;
+  pageSize: number;
+  from?: string;
+  to?: string;
+};
+
+export async function listScoringRuns(params: ListScoringRunsParams): Promise<{
+  items: ScoringRunWithTaskRow[];
+  total: number;
+}> {
+  const supabase = getSupabaseAdmin();
+  const safePage = Number.isFinite(params.page) && params.page > 0 ? params.page : 1;
+  const safePageSize =
+    Number.isFinite(params.pageSize) && params.pageSize > 0
+      ? Math.min(params.pageSize, 100)
+      : 20;
+
+  const fromIndex = (safePage - 1) * safePageSize;
+  const toIndex = fromIndex + safePageSize - 1;
+
+  let query = supabase.from("scoring_runs").select(
+    "id, task_id, prompt_id, provider, model, prompt_version, rendered_prompt, raw_response, parsed_output, created_at, task:tasks(id, title)",
+    { count: "exact" },
+  );
+
+  if (params.from) {
+    const fromIso = toIsoBoundary(params.from, "start");
+    if (fromIso) query = query.gte("created_at", fromIso);
+  }
+
+  if (params.to) {
+    const toIso = toIsoBoundary(params.to, "end");
+    if (toIso) query = query.lte("created_at", toIso);
+  }
+
+  const { data, error, count } = await query
+    .order("created_at", { ascending: false })
+    .range(fromIndex, toIndex);
+
+  if (error) throw new Error(error.message);
+
+  return { items: (data as ScoringRunWithTaskRow[]) ?? [], total: count ?? 0 };
 }
 
 export async function listPrompts(): Promise<PromptRow[]> {

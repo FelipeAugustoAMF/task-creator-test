@@ -40,8 +40,11 @@ export function DashboardPageClient(props: {
     const sp = new URLSearchParams();
     if (filters.search?.trim()) sp.set("search", filters.search.trim());
     if (filters.category?.trim()) sp.set("category", filters.category.trim());
+    if (filters.tags?.length) sp.set("tags", filters.tags.join(","));
     if (typeof filters.scoreMin === "number") sp.set("scoreMin", String(filters.scoreMin));
     if (typeof filters.scoreMax === "number") sp.set("scoreMax", String(filters.scoreMax));
+    if (filters.from?.trim()) sp.set("from", filters.from.trim());
+    if (filters.to?.trim()) sp.set("to", filters.to.trim());
     sp.set("page", String(next.page ?? props.page));
     return sp;
   }
@@ -51,7 +54,15 @@ export function DashboardPageClient(props: {
   }
 
   function clearFilters() {
-    setFilters({ search: "", category: "", scoreMin: undefined, scoreMax: undefined });
+    setFilters({
+      search: "",
+      category: "",
+      scoreMin: undefined,
+      scoreMax: undefined,
+      from: "",
+      to: "",
+      tags: [],
+    });
     router.push("/dashboard");
   }
 
@@ -77,7 +88,9 @@ export function DashboardPageClient(props: {
         />
       </Card>
 
-      <TaskTable tasks={props.items} />
+      <Card withBorder p={0}>
+        <TaskTable tasks={props.items} />
+      </Card>
 
       <Group justify="center">
         <Pagination

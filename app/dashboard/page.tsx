@@ -1,6 +1,7 @@
 import React from "react";
 
 import { DashboardPageClient } from "@/components/DashboardPageClient";
+import { coerceAllowedTag } from "@/lib/scoring/taxonomy";
 import { listTasks } from "@/lib/tasks/service";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,28 @@ export default async function DashboardPage(props: {
 
   const category = typeof sp.category === "string" ? sp.category : undefined;
   const search = typeof sp.search === "string" ? sp.search : undefined;
+  const from = typeof sp.from === "string" ? sp.from : undefined;
+  const to = typeof sp.to === "string" ? sp.to : undefined;
+
+  const rawTags = sp.tags;
+  const tags = (() => {
+    const parts: string[] = [];
+    if (typeof rawTags === "string") parts.push(rawTags);
+    if (Array.isArray(rawTags)) parts.push(...rawTags);
+
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const part of parts) {
+      for (const piece of part.split(",")) {
+        const allowed = coerceAllowedTag(piece);
+        if (!allowed) continue;
+        if (seen.has(allowed)) continue;
+        seen.add(allowed);
+        out.push(allowed);
+      }
+    }
+    return out.length ? out : undefined;
+  })();
 
   const { items, total } = await listTasks({
     page,
@@ -28,6 +51,9 @@ export default async function DashboardPage(props: {
     scoreMax: Number.isFinite(scoreMax as number) ? (scoreMax as number) : undefined,
     category,
     search,
+    from,
+    to,
+    tags,
   });
 
   return (
@@ -41,8 +67,10 @@ export default async function DashboardPage(props: {
         category: category || "",
         scoreMin: Number.isFinite(scoreMin as number) ? (scoreMin as number) : undefined,
         scoreMax: Number.isFinite(scoreMax as number) ? (scoreMax as number) : undefined,
+        from: from || "",
+        to: to || "",
+        tags: tags || [],
       }}
     />
   );
 }
-

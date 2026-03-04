@@ -11,27 +11,19 @@ import {
 import Link from "next/link";
 import React from "react";
 
+import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
 import { TaskRow } from "@/lib/tasks/types";
 
-const categoryLabelMap: Record<string, string> = {
-  incident: "Incidente",
-  bug: "Defeito",
-  feature: "Melhoria",
-  ops: "Manutenção",
-  finance: "Financeiro",
-  support: "Suporte",
-  other: "Outro",
-
-  incidente: "Incidente",
-  defeito: "Defeito",
-  melhoria: "Melhoria",
-  manutenção: "Manutenção",
-  segurança: "Segurança",
-  financeiro: "Financeiro",
-  suporte: "Suporte",
-  administrativo: "Administrativo",
-  pessoal: "Pessoal",
-  outro: "Outro",
+const legacyCategoryMap: Record<string, string> = {
+  incident: "incidente",
+  bug: "defeito",
+  feature: "melhoria",
+  ops: "manutenção",
+  finance: "financeiro",
+  support: "suporte",
+  other: "outro",
+  manutencao: "manutenção",
+  seguranca: "segurança",
 };
 
 function formatDate(value: string) {
@@ -41,13 +33,25 @@ function formatDate(value: string) {
 }
 
 function formatCategory(value: string) {
-  return categoryLabelMap[value] || value;
+  const key = value.trim().toLowerCase();
+  const canonical = legacyCategoryMap[key] ?? key;
+  return (SCORING_CATEGORY_LABELS as Record<string, string>)[canonical] || value;
+}
+
+function formatTag(value: string) {
+  return (ALLOWED_TAG_LABELS as Record<string, string>)[value] || value;
+}
+
+function scoreColor(score: number) {
+  if (score >= 8) return "red";
+  if (score >= 5) return "yellow";
+  return "green";
 }
 
 export function TaskTable(props: { tasks: TaskRow[] }) {
   return (
     <ScrollArea>
-      <Table striped highlightOnHover withTableBorder withColumnBorders>
+      <Table striped highlightOnHover>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Score</Table.Th>
@@ -75,7 +79,7 @@ export function TaskTable(props: { tasks: TaskRow[] }) {
                       falhou
                     </Badge>
                   ) : (
-                    <Badge color="indigo" variant="light">
+                    <Badge color={scoreColor(task.score ?? 0)} variant="light">
                       {task.score}
                     </Badge>
                   )}
@@ -97,11 +101,11 @@ export function TaskTable(props: { tasks: TaskRow[] }) {
                   )}
                 </Table.Td>
                 <Table.Td>
-                  <Group gap={6}>
+                  <Group gap={6} wrap="wrap">
                     {task.tags?.length ? (
                       task.tags.map((tag) => (
                         <Badge key={tag} size="sm" variant="outline">
-                          {tag}
+                          {formatTag(tag)}
                         </Badge>
                       ))
                     ) : (
