@@ -1,8 +1,11 @@
 "use client";
 
 import {
+  ActionIcon,
+  Badge,
   Button,
   Card,
+  Collapse,
   Group,
   Pagination,
   Stack,
@@ -15,6 +18,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { TaskFormModal } from "@/components/TaskFormModal";
 import { TaskFilters, TaskFiltersValue } from "@/components/TaskFilters";
 import { TaskTable } from "@/components/TaskTable";
+import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
 import {
   DEFAULT_TASK_SORT_BY,
   DEFAULT_TASK_SORT_DIR,
@@ -35,6 +39,7 @@ export function DashboardPageClient(props: {
   const [filters, setFilters] = useState<TaskFiltersValue>(props.initialFilters);
   const [sortBy, setSortBy] = useState<TaskSortBy>(props.initialSort.sortBy);
   const [sortDir, setSortDir] = useState<TaskSortDir>(props.initialSort.sortDir);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
@@ -125,12 +130,120 @@ export function DashboardPageClient(props: {
       </Group>
 
       <Card withBorder>
-        <TaskFilters
-          value={filters}
-          onChange={setFilters}
-          onApply={applyFilters}
-          onClear={clearFilters}
-        />
+        <Group justify="space-between" align="center">
+          <Text fw={600}>Filtros</Text>
+          <ActionIcon
+            variant="subtle"
+            aria-label={filtersOpen ? "Recolher filtros" : "Expandir filtros"}
+            onClick={() => setFiltersOpen((v) => !v)}
+          >
+            {filtersOpen ? "▲" : "▼"}
+          </ActionIcon>
+        </Group>
+
+        <Group gap={8} mt="sm" wrap="wrap">
+          {(() => {
+            const applied = props.initialFilters;
+            const chips: React.ReactNode[] = [];
+
+            const search = applied.search?.trim();
+            if (search) {
+              chips.push(
+                <Badge key="search" variant="light" color="gray">
+                  Busca: {search}
+                </Badge>,
+              );
+            }
+
+            const category = applied.category?.trim();
+            if (category) {
+              const categoryLabel =
+                (SCORING_CATEGORY_LABELS as Record<string, string>)[category] || category;
+              chips.push(
+                <Badge key="category" variant="light" color="gray">
+                  Categoria: {categoryLabel}
+                </Badge>,
+              );
+            }
+
+            if (applied.tags?.length) {
+              for (const t of applied.tags) {
+                const label = (ALLOWED_TAG_LABELS as Record<string, string>)[t] || t;
+                chips.push(
+                  <Badge key={`tag:${t}`} variant="light" color="indigo">
+                    {label}
+                  </Badge>,
+                );
+              }
+            }
+
+            const scoreMin = applied.scoreMin;
+            const scoreMax = applied.scoreMax;
+            if (typeof scoreMin === "number" || typeof scoreMax === "number") {
+              const scoreLabel =
+                typeof scoreMin === "number" && typeof scoreMax === "number"
+                  ? `${scoreMin}–${scoreMax}`
+                  : typeof scoreMin === "number"
+                    ? `≥ ${scoreMin}`
+                    : `≤ ${scoreMax}`;
+
+              chips.push(
+                <Badge key="score" variant="light" color="gray">
+                  Score: {scoreLabel}
+                </Badge>,
+              );
+            }
+
+            const from = applied.from?.trim();
+            const to = applied.to?.trim();
+            if (from || to) {
+              const dateLabel = from && to ? `${from} → ${to}` : from ? `≥ ${from}` : `≤ ${to}`;
+              chips.push(
+                <Badge key="date" variant="light" color="gray">
+                  Data: {dateLabel}
+                </Badge>,
+              );
+            }
+
+            if (
+              props.initialSort.sortBy !== DEFAULT_TASK_SORT_BY ||
+              props.initialSort.sortDir !== DEFAULT_TASK_SORT_DIR
+            ) {
+              const sortByLabelMap: Record<TaskSortBy, string> = {
+                created_at: "Data",
+                score: "Score",
+                title: "Título",
+              };
+              const dirSymbol = props.initialSort.sortDir === "asc" ? "↑" : "↓";
+              chips.push(
+                <Badge key="sort" variant="light" color="gray">
+                  Ordenação: {sortByLabelMap[props.initialSort.sortBy]} {dirSymbol}
+                </Badge>,
+              );
+            }
+
+            if (chips.length === 0) {
+              return (
+                <Text key="none" c="dimmed" size="sm">
+                  Nenhum filtro aplicado.
+                </Text>
+              );
+            }
+
+            return chips;
+          })()}
+        </Group>
+
+        <Collapse in={filtersOpen}>
+          <Stack mt="md">
+            <TaskFilters
+              value={filters}
+              onChange={setFilters}
+              onApply={applyFilters}
+              onClear={clearFilters}
+            />
+          </Stack>
+        </Collapse>
       </Card>
 
       <Card withBorder p={0}>

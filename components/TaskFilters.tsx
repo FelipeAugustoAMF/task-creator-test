@@ -86,7 +86,7 @@ export function TaskFilters(props: {
               min={1}
               max={10}
               clampBehavior="strict"
-              value={props.value.scoreMin}
+              value={props.value.scoreMin ?? ""}
               onChange={(value) =>
                 props.onChange({
                   ...props.value,
@@ -101,7 +101,7 @@ export function TaskFilters(props: {
               min={1}
               max={10}
               clampBehavior="strict"
-              value={props.value.scoreMax}
+              value={props.value.scoreMax ?? ""}
               onChange={(value) =>
                 props.onChange({
                   ...props.value,
