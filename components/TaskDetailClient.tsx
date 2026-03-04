@@ -64,6 +64,9 @@ export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }
           <Text c="dimmed" size="sm">
             {formatDate(task.created_at)}
           </Text>
+          <Text c="dimmed" size="sm" lineClamp={2}>
+            {task.description}
+          </Text>
         </Stack>
 
         <Group>

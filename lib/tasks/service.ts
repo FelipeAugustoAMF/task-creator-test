@@ -9,6 +9,12 @@ import { renderPrompt } from "@/lib/scoring/prompt";
 import { scoreTaskWithOpenAI } from "@/lib/scoring/scoreTask";
 import { formatAllowedTagsForPrompt } from "@/lib/scoring/taxonomy";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import {
+  DEFAULT_TASK_SORT_BY,
+  DEFAULT_TASK_SORT_DIR,
+  TaskSortBy,
+  TaskSortDir,
+} from "@/lib/tasks/query";
 import { PromptRow, ScoringRunRow, ScoringRunWithTaskRow, TaskRow } from "@/lib/tasks/types";
 
 export type CreateTaskInput = {
@@ -168,6 +174,8 @@ export type ListTasksParams = {
   from?: string;
   to?: string;
   tags?: string[];
+  sortBy?: TaskSortBy;
+  sortDir?: TaskSortDir;
 };
 
 function toIsoBoundary(value: string, boundary: "start" | "end") {
@@ -235,9 +243,21 @@ export async function listTasks(params: ListTasksParams): Promise<{
     if (toIso) query = query.lte("created_at", toIso);
   }
 
-  const { data, error, count } = await query
-    .order("created_at", { ascending: false })
-    .range(fromIndex, toIndex);
+  const sortBy = params.sortBy ?? DEFAULT_TASK_SORT_BY;
+  const sortDir = params.sortDir ?? DEFAULT_TASK_SORT_DIR;
+  const ascending = sortDir === "asc";
+
+  if (sortBy === "score") {
+    query = query
+      .order("score", { ascending, nullsFirst: false })
+      .order("created_at", { ascending: false });
+  } else if (sortBy === "title") {
+    query = query.order("title", { ascending }).order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending });
+  }
+
+  const { data, error, count } = await query.range(fromIndex, toIndex);
 
   if (error) {
     throw new Error(error.message);

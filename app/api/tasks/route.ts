@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { requireAppApiKey } from "@/lib/api/auth";
 import { coerceAllowedTag } from "@/lib/scoring/taxonomy";
+import { coerceTaskSortBy, coerceTaskSortDir } from "@/lib/tasks/query";
 import { createTaskAndScore, listTasks } from "@/lib/tasks/service";
 
 export const runtime = "nodejs";
@@ -71,6 +72,8 @@ export async function GET(request: Request) {
     const search = searchParams.get("search") || undefined;
     const from = searchParams.get("from") || undefined;
     const to = searchParams.get("to") || undefined;
+    const sortBy = coerceTaskSortBy(searchParams.get("sortBy") || undefined);
+    const sortDir = coerceTaskSortDir(searchParams.get("sortDir") || undefined);
 
     const tagsParam = searchParams.get("tags") || undefined;
     const tags = tagsParam
@@ -90,6 +93,8 @@ export async function GET(request: Request) {
       from,
       to,
       tags,
+      sortBy,
+      sortDir,
     });
 
     return Response.json({ items, total, page, pageSize });

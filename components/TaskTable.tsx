@@ -7,11 +7,13 @@ import {
   ScrollArea,
   Table,
   Text,
+  UnstyledButton,
 } from "@mantine/core";
 import Link from "next/link";
 import React from "react";
 
 import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
+import { TaskSortBy, TaskSortDir } from "@/lib/tasks/query";
 import { TaskRow } from "@/lib/tasks/types";
 
 const legacyCategoryMap: Record<string, string> = {
@@ -48,17 +50,77 @@ function scoreColor(score: number) {
   return "green";
 }
 
-export function TaskTable(props: { tasks: TaskRow[] }) {
+function SortableTh(props: {
+  label: string;
+  by: TaskSortBy;
+  activeBy: TaskSortBy;
+  dir: TaskSortDir;
+  onChange: (by: TaskSortBy) => void;
+}) {
+  const active = props.activeBy === props.by;
+  const indicator = active ? (props.dir === "asc" ? "▲" : "▼") : "↕";
+
+  return (
+    <Table.Th>
+      <UnstyledButton
+        onClick={() => props.onChange(props.by)}
+        style={{ width: "100%", cursor: "pointer" }}
+      >
+        <Group gap={6} wrap="nowrap" justify="space-between">
+          <Text fw={600} size="sm">
+            {props.label}
+          </Text>
+          <Text size="xs" c={active ? "dark" : "dimmed"}>
+            {indicator}
+          </Text>
+        </Group>
+      </UnstyledButton>
+    </Table.Th>
+  );
+}
+
+export function TaskTable(props: {
+  tasks: TaskRow[];
+  sortBy: TaskSortBy;
+  sortDir: TaskSortDir;
+  onSortChange: (by: TaskSortBy) => void;
+}) {
   return (
     <ScrollArea>
       <Table striped highlightOnHover>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Score</Table.Th>
-            <Table.Th>Título</Table.Th>
-            <Table.Th>Categoria</Table.Th>
-            <Table.Th>Tags</Table.Th>
-            <Table.Th>Criada em</Table.Th>
+            <SortableTh
+              label="Score"
+              by="score"
+              activeBy={props.sortBy}
+              dir={props.sortDir}
+              onChange={props.onSortChange}
+            />
+            <SortableTh
+              label="Título"
+              by="title"
+              activeBy={props.sortBy}
+              dir={props.sortDir}
+              onChange={props.onSortChange}
+            />
+            <Table.Th>
+              <Text fw={600} size="sm">
+                Categoria
+              </Text>
+            </Table.Th>
+            <Table.Th>
+              <Text fw={600} size="sm">
+                Tags
+              </Text>
+            </Table.Th>
+            <SortableTh
+              label="Criada em"
+              by="created_at"
+              activeBy={props.sortBy}
+              dir={props.sortDir}
+              onChange={props.onSortChange}
+            />
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>

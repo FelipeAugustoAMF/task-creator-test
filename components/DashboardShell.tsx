@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ActionIcon,
   AppShell,
   Burger,
   Container,
@@ -9,9 +10,11 @@ import {
   ScrollArea,
   Stack,
   Text,
+  ThemeIcon,
+  Tooltip,
   Title,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -19,11 +22,19 @@ import React from "react";
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [opened, { toggle, close }] = useDisclosure();
+  const [collapsed, setCollapsed] = useLocalStorage({
+    key: "tha_nav_collapsed",
+    defaultValue: false,
+  });
 
   return (
     <AppShell
       header={{ height: 56 }}
-      navbar={{ width: 260, breakpoint: "sm", collapsed: { mobile: !opened } }}
+      navbar={{
+        width: collapsed ? 84 : 260,
+        breakpoint: "sm",
+        collapsed: { mobile: !opened },
+      }}
       padding="md"
     >
       <AppShell.Header>
@@ -40,28 +51,89 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
+      <AppShell.Navbar p={collapsed ? "xs" : "md"}>
+        <AppShell.Section mb="sm">
+          <Group justify={collapsed ? "center" : "space-between"}>
+            {!collapsed && (
+              <Text size="sm" fw={600}>
+                Navegação
+              </Text>
+            )}
+            <ActionIcon
+              variant="subtle"
+              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+              onClick={() => setCollapsed((v) => !v)}
+            >
+              {collapsed ? "»" : "«"}
+            </ActionIcon>
+          </Group>
+        </AppShell.Section>
+
         <AppShell.Section component={ScrollArea} grow>
-          <NavLink
-            component={Link}
-            href="/dashboard"
+          <Tooltip
             label="Tarefas"
-            active={pathname === "/dashboard" || pathname.startsWith("/dashboard/tasks")}
-            onClick={close}
-          />
-          <NavLink
-            component={Link}
-            href="/dashboard/logs"
-            label="Logs"
-            active={pathname.startsWith("/dashboard/logs")}
-            onClick={close}
-          />
+            position="right"
+            withArrow
+            disabled={!collapsed}
+          >
+            <NavLink
+              component={Link}
+              href="/dashboard"
+              label={collapsed ? undefined : "Tarefas"}
+              leftSection={
+                <ThemeIcon variant="light" color="indigo" radius="md" size={32}>
+                  <Text fw={700} size="sm">
+                    T
+                  </Text>
+                </ThemeIcon>
+              }
+              active={pathname === "/dashboard" || pathname.startsWith("/dashboard/tasks")}
+              onClick={close}
+              styles={
+                collapsed
+                  ? {
+                      root: { justifyContent: "center" },
+                      body: { display: "none" },
+                      section: { marginInlineEnd: 0 },
+                    }
+                  : undefined
+              }
+            />
+          </Tooltip>
+
+          <Tooltip label="Logs" position="right" withArrow disabled={!collapsed}>
+            <NavLink
+              component={Link}
+              href="/dashboard/logs"
+              label={collapsed ? undefined : "Logs"}
+              leftSection={
+                <ThemeIcon variant="light" color="indigo" radius="md" size={32}>
+                  <Text fw={700} size="sm">
+                    L
+                  </Text>
+                </ThemeIcon>
+              }
+              active={pathname.startsWith("/dashboard/logs")}
+              onClick={close}
+              styles={
+                collapsed
+                  ? {
+                      root: { justifyContent: "center" },
+                      body: { display: "none" },
+                      section: { marginInlineEnd: 0 },
+                    }
+                  : undefined
+              }
+            />
+          </Tooltip>
         </AppShell.Section>
 
         <AppShell.Section>
-          <Text size="xs" c="dimmed">
-            MVP • Next.js + Mantine + Supabase + OpenAI
-          </Text>
+          {!collapsed && (
+            <Text size="xs" c="dimmed">
+              MVP • Next.js + Mantine + Supabase + OpenAI
+            </Text>
+          )}
         </AppShell.Section>
       </AppShell.Navbar>
 

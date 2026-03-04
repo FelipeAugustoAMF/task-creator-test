@@ -2,6 +2,12 @@ import React from "react";
 
 import { DashboardPageClient } from "@/components/DashboardPageClient";
 import { coerceAllowedTag } from "@/lib/scoring/taxonomy";
+import {
+  coerceTaskSortBy,
+  coerceTaskSortDir,
+  DEFAULT_TASK_SORT_BY,
+  DEFAULT_TASK_SORT_DIR,
+} from "@/lib/tasks/query";
 import { listTasks } from "@/lib/tasks/service";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +29,8 @@ export default async function DashboardPage(props: {
   const search = typeof sp.search === "string" ? sp.search : undefined;
   const from = typeof sp.from === "string" ? sp.from : undefined;
   const to = typeof sp.to === "string" ? sp.to : undefined;
+  const sortBy = coerceTaskSortBy(typeof sp.sortBy === "string" ? sp.sortBy : undefined);
+  const sortDir = coerceTaskSortDir(typeof sp.sortDir === "string" ? sp.sortDir : undefined);
 
   const rawTags = sp.tags;
   const tags = (() => {
@@ -54,6 +62,8 @@ export default async function DashboardPage(props: {
     from,
     to,
     tags,
+    sortBy,
+    sortDir,
   });
 
   return (
@@ -62,6 +72,10 @@ export default async function DashboardPage(props: {
       total={total}
       page={page}
       pageSize={pageSize}
+      initialSort={{
+        sortBy: sortBy ?? DEFAULT_TASK_SORT_BY,
+        sortDir: sortDir ?? DEFAULT_TASK_SORT_DIR,
+      }}
       initialFilters={{
         search: search || "",
         category: category || "",

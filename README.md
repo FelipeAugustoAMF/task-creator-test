@@ -85,6 +85,8 @@ curl "http://localhost:3000/api/tasks?page=1&pageSize=20&from=2026-03-01&to=2026
   -H "Authorization: Bearer $APP_API_KEY"
 ```
 
+Ordenação: `sortBy=created_at|score|title` e `sortDir=asc|desc` (padrão: `created_at desc`).
+
 ### 4.3) GET /api/tasks/:id
 
 ```bash

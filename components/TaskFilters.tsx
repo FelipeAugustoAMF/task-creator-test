@@ -47,22 +47,22 @@ export function TaskFilters(props: {
       <Grid>
         <Grid.Col span={{ base: 12, md: 6 }}>
           <TextInput
-          label="Busca"
-          placeholder="Título ou descrição"
-          value={props.value.search}
-          onChange={(e) => props.onChange({ ...props.value, search: e.currentTarget.value })}
-        />
+            label="Busca"
+            placeholder="Título ou descrição"
+            value={props.value.search}
+            onChange={(e) => props.onChange({ ...props.value, search: e.currentTarget.value })}
+          />
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, md: 3 }}>
           <Select
-          label="Categoria"
-          data={categoryOptions}
-          value={props.value.category}
-          onChange={(value) => props.onChange({ ...props.value, category: value || "" })}
-          clearable
-          searchable
-        />
+            label="Categoria"
+            data={categoryOptions}
+            value={props.value.category}
+            onChange={(value) => props.onChange({ ...props.value, category: value || "" })}
+            clearable
+            searchable
+          />
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, md: 3 }}>
@@ -74,66 +74,72 @@ export function TaskFilters(props: {
             onChange={(value) => props.onChange({ ...props.value, tags: value })}
             searchable
             clearable
+            nothingFoundMessage="Nenhuma tag encontrada"
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 6, md: 3 }}>
-          <NumberInput
-          label="Score mínimo"
-          min={1}
-          max={10}
-          clampBehavior="strict"
-          value={props.value.scoreMin}
-          onChange={(value) =>
-            props.onChange({
-              ...props.value,
-              scoreMin: typeof value === "number" ? value : undefined,
-            })
-          }
-        />
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Group grow>
+            <NumberInput
+              label="Score mín."
+              placeholder="1"
+              min={1}
+              max={10}
+              clampBehavior="strict"
+              value={props.value.scoreMin}
+              onChange={(value) =>
+                props.onChange({
+                  ...props.value,
+                  scoreMin: typeof value === "number" ? value : undefined,
+                })
+              }
+            />
+
+            <NumberInput
+              label="Score máx."
+              placeholder="10"
+              min={1}
+              max={10}
+              clampBehavior="strict"
+              value={props.value.scoreMax}
+              onChange={(value) =>
+                props.onChange({
+                  ...props.value,
+                  scoreMax: typeof value === "number" ? value : undefined,
+                })
+              }
+            />
+          </Group>
         </Grid.Col>
 
-        <Grid.Col span={{ base: 6, md: 3 }}>
-          <NumberInput
-          label="Score máximo"
-          min={1}
-          max={10}
-          clampBehavior="strict"
-          value={props.value.scoreMax}
-          onChange={(value) =>
-            props.onChange({
-              ...props.value,
-              scoreMax: typeof value === "number" ? value : undefined,
-            })
-          }
-        />
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Group grow>
+            <TextInput
+              type="date"
+              label="De"
+              value={props.value.from}
+              onChange={(e) =>
+                props.onChange({ ...props.value, from: e.currentTarget.value })
+              }
+            />
+            <TextInput
+              type="date"
+              label="Até"
+              value={props.value.to}
+              onChange={(e) => props.onChange({ ...props.value, to: e.currentTarget.value })}
+            />
+          </Group>
         </Grid.Col>
 
-        <Grid.Col span={{ base: 6, md: 3 }}>
-          <TextInput
-            type="date"
-            label="De"
-            value={props.value.from}
-            onChange={(e) => props.onChange({ ...props.value, from: e.currentTarget.value })}
-          />
-        </Grid.Col>
-
-        <Grid.Col span={{ base: 6, md: 3 }}>
-          <TextInput
-            type="date"
-            label="Até"
-            value={props.value.to}
-            onChange={(e) => props.onChange({ ...props.value, to: e.currentTarget.value })}
-          />
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={props.onClear}>
+              Limpar
+            </Button>
+            <Button onClick={props.onApply}>Aplicar</Button>
+          </Group>
         </Grid.Col>
       </Grid>
-
-      <Group justify="flex-end">
-        <Button variant="default" onClick={props.onClear}>
-          Limpar
-        </Button>
-        <Button onClick={props.onApply}>Aplicar</Button>
-      </Group>
     </Stack>
   );
 }
