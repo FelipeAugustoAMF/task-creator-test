@@ -12,6 +12,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { useClickOutside } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -41,6 +42,7 @@ export function DashboardPageClient(props: {
   const [sortDir, setSortDir] = useState<TaskSortDir>(props.initialSort.sortDir);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const filtersCardRef = useClickOutside(() => setFiltersOpen(false));
 
   useEffect(() => {
     setFilters(props.initialFilters);
@@ -55,35 +57,54 @@ export function DashboardPageClient(props: {
     return Math.max(1, Math.ceil(props.total / props.pageSize));
   }, [props.pageSize, props.total]);
 
-  function buildSearchParams(
-    next: { page?: number; sortBy?: TaskSortBy; sortDir?: TaskSortDir } = {},
-  ) {
-    const sortByToUse = next.sortBy ?? sortBy;
-    const sortDirToUse = next.sortDir ?? sortDir;
-
+  function buildSearchParamsFrom(params: {
+    filters: TaskFiltersValue;
+    page: number;
+    sortBy: TaskSortBy;
+    sortDir: TaskSortDir;
+  }) {
     const sp = new URLSearchParams();
-    if (filters.search?.trim()) sp.set("search", filters.search.trim());
-    if (filters.category?.trim()) sp.set("category", filters.category.trim());
-    if (filters.tags?.length) sp.set("tags", filters.tags.join(","));
-    if (typeof filters.scoreMin === "number") sp.set("scoreMin", String(filters.scoreMin));
-    if (typeof filters.scoreMax === "number") sp.set("scoreMax", String(filters.scoreMax));
-    if (filters.from?.trim()) sp.set("from", filters.from.trim());
-    if (filters.to?.trim()) sp.set("to", filters.to.trim());
+    const f = params.filters;
+
+    if (f.search?.trim()) sp.set("search", f.search.trim());
+    if (f.category?.trim()) sp.set("category", f.category.trim());
+    if (f.tags?.length) sp.set("tags", f.tags.join(","));
+    if (typeof f.scoreMin === "number") sp.set("scoreMin", String(f.scoreMin));
+    if (typeof f.scoreMax === "number") sp.set("scoreMax", String(f.scoreMax));
+    if (f.from?.trim()) sp.set("from", f.from.trim());
+    if (f.to?.trim()) sp.set("to", f.to.trim());
 
     if (
-      sortByToUse !== DEFAULT_TASK_SORT_BY ||
-      sortDirToUse !== DEFAULT_TASK_SORT_DIR
+      params.sortBy !== DEFAULT_TASK_SORT_BY ||
+      params.sortDir !== DEFAULT_TASK_SORT_DIR
     ) {
-      sp.set("sortBy", sortByToUse);
-      sp.set("sortDir", sortDirToUse);
+      sp.set("sortBy", params.sortBy);
+      sp.set("sortDir", params.sortDir);
     }
 
-    sp.set("page", String(next.page ?? props.page));
+    if (params.page > 1) sp.set("page", String(params.page));
+
     return sp;
   }
 
+  function buildSearchParams(
+    next: { page?: number; sortBy?: TaskSortBy; sortDir?: TaskSortDir } = {},
+  ) {
+    return buildSearchParamsFrom({
+      filters,
+      page: next.page ?? props.page,
+      sortBy: next.sortBy ?? sortBy,
+      sortDir: next.sortDir ?? sortDir,
+    });
+  }
+
+  function pushDashboard(sp: URLSearchParams) {
+    const qs = sp.toString();
+    router.push(qs ? `/dashboard?${qs}` : "/dashboard");
+  }
+
   function applyFilters() {
-    router.push(`/dashboard?${buildSearchParams({ page: 1 }).toString()}`);
+    pushDashboard(buildSearchParams({ page: 1 }));
   }
 
   function clearFilters() {
@@ -113,7 +134,7 @@ export function DashboardPageClient(props: {
 
     setSortBy(nextBy);
     setSortDir(nextDir);
-    router.push(`/dashboard?${buildSearchParams({ page: 1, sortBy: nextBy, sortDir: nextDir }).toString()}`);
+    pushDashboard(buildSearchParams({ page: 1, sortBy: nextBy, sortDir: nextDir }));
   }
 
   return (
@@ -129,7 +150,7 @@ export function DashboardPageClient(props: {
         <Button onClick={() => setModalOpen(true)}>Nova tarefa</Button>
       </Group>
 
-      <Card withBorder>
+      <Card withBorder ref={filtersCardRef}>
         <Group justify="space-between" align="center">
           <Text fw={600}>Filtros</Text>
           <ActionIcon
@@ -144,13 +165,40 @@ export function DashboardPageClient(props: {
         <Group gap={8} mt="sm" wrap="wrap">
           {(() => {
             const applied = props.initialFilters;
+            const appliedSort = props.initialSort;
             const chips: React.ReactNode[] = [];
 
             const search = applied.search?.trim();
             if (search) {
+              const nextApplied: TaskFiltersValue = { ...applied, search: "" };
               chips.push(
-                <Badge key="search" variant="light" color="gray">
-                  Busca: {search}
+                <Badge
+                  key="search"
+                  variant="light"
+                  color="gray"
+                  rightSection={
+                    <ActionIcon
+                      variant="transparent"
+                      size="xs"
+                      aria-label="Remover filtro: Título"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilters(nextApplied);
+                        pushDashboard(
+                          buildSearchParamsFrom({
+                            filters: nextApplied,
+                            page: 1,
+                            sortBy: appliedSort.sortBy,
+                            sortDir: appliedSort.sortDir,
+                          }),
+                        );
+                      }}
+                    >
+                      x
+                    </ActionIcon>
+                  }
+                >
+                  Título: {search}
                 </Badge>,
               );
             }
@@ -159,8 +207,34 @@ export function DashboardPageClient(props: {
             if (category) {
               const categoryLabel =
                 (SCORING_CATEGORY_LABELS as Record<string, string>)[category] || category;
+              const nextApplied: TaskFiltersValue = { ...applied, category: "" };
               chips.push(
-                <Badge key="category" variant="light" color="gray">
+                <Badge
+                  key="category"
+                  variant="light"
+                  color="gray"
+                  rightSection={
+                    <ActionIcon
+                      variant="transparent"
+                      size="xs"
+                      aria-label="Remover filtro: Categoria"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilters(nextApplied);
+                        pushDashboard(
+                          buildSearchParamsFrom({
+                            filters: nextApplied,
+                            page: 1,
+                            sortBy: appliedSort.sortBy,
+                            sortDir: appliedSort.sortDir,
+                          }),
+                        );
+                      }}
+                    >
+                      x
+                    </ActionIcon>
+                  }
+                >
                   Categoria: {categoryLabel}
                 </Badge>,
               );
@@ -169,8 +243,37 @@ export function DashboardPageClient(props: {
             if (applied.tags?.length) {
               for (const t of applied.tags) {
                 const label = (ALLOWED_TAG_LABELS as Record<string, string>)[t] || t;
+                const nextApplied: TaskFiltersValue = {
+                  ...applied,
+                  tags: applied.tags.filter((x) => x !== t),
+                };
                 chips.push(
-                  <Badge key={`tag:${t}`} variant="light" color="indigo">
+                  <Badge
+                    key={`tag:${t}`}
+                    variant="light"
+                    color="indigo"
+                    rightSection={
+                      <ActionIcon
+                        variant="transparent"
+                        size="xs"
+                        aria-label={`Remover tag: ${label}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFilters(nextApplied);
+                          pushDashboard(
+                            buildSearchParamsFrom({
+                              filters: nextApplied,
+                              page: 1,
+                              sortBy: appliedSort.sortBy,
+                              sortDir: appliedSort.sortDir,
+                            }),
+                          );
+                        }}
+                      >
+                        x
+                      </ActionIcon>
+                    }
+                  >
                     {label}
                   </Badge>,
                 );
@@ -187,8 +290,38 @@ export function DashboardPageClient(props: {
                     ? `≥ ${scoreMin}`
                     : `≤ ${scoreMax}`;
 
+              const nextApplied: TaskFiltersValue = {
+                ...applied,
+                scoreMin: undefined,
+                scoreMax: undefined,
+              };
               chips.push(
-                <Badge key="score" variant="light" color="gray">
+                <Badge
+                  key="score"
+                  variant="light"
+                  color="gray"
+                  rightSection={
+                    <ActionIcon
+                      variant="transparent"
+                      size="xs"
+                      aria-label="Remover filtro: Score"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilters(nextApplied);
+                        pushDashboard(
+                          buildSearchParamsFrom({
+                            filters: nextApplied,
+                            page: 1,
+                            sortBy: appliedSort.sortBy,
+                            sortDir: appliedSort.sortDir,
+                          }),
+                        );
+                      }}
+                    >
+                      x
+                    </ActionIcon>
+                  }
+                >
                   Score: {scoreLabel}
                 </Badge>,
               );
@@ -198,26 +331,78 @@ export function DashboardPageClient(props: {
             const to = applied.to?.trim();
             if (from || to) {
               const dateLabel = from && to ? `${from} → ${to}` : from ? `≥ ${from}` : `≤ ${to}`;
+              const nextApplied: TaskFiltersValue = { ...applied, from: "", to: "" };
               chips.push(
-                <Badge key="date" variant="light" color="gray">
+                <Badge
+                  key="date"
+                  variant="light"
+                  color="gray"
+                  rightSection={
+                    <ActionIcon
+                      variant="transparent"
+                      size="xs"
+                      aria-label="Remover filtro: Data"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilters(nextApplied);
+                        pushDashboard(
+                          buildSearchParamsFrom({
+                            filters: nextApplied,
+                            page: 1,
+                            sortBy: appliedSort.sortBy,
+                            sortDir: appliedSort.sortDir,
+                          }),
+                        );
+                      }}
+                    >
+                      x
+                    </ActionIcon>
+                  }
+                >
                   Data: {dateLabel}
                 </Badge>,
               );
             }
 
             if (
-              props.initialSort.sortBy !== DEFAULT_TASK_SORT_BY ||
-              props.initialSort.sortDir !== DEFAULT_TASK_SORT_DIR
+              appliedSort.sortBy !== DEFAULT_TASK_SORT_BY ||
+              appliedSort.sortDir !== DEFAULT_TASK_SORT_DIR
             ) {
               const sortByLabelMap: Record<TaskSortBy, string> = {
                 created_at: "Data",
                 score: "Score",
                 title: "Título",
               };
-              const dirSymbol = props.initialSort.sortDir === "asc" ? "↑" : "↓";
+              const dirSymbol = appliedSort.sortDir === "asc" ? "↑" : "↓";
               chips.push(
-                <Badge key="sort" variant="light" color="gray">
-                  Ordenação: {sortByLabelMap[props.initialSort.sortBy]} {dirSymbol}
+                <Badge
+                  key="sort"
+                  variant="light"
+                  color="gray"
+                  rightSection={
+                    <ActionIcon
+                      variant="transparent"
+                      size="xs"
+                      aria-label="Remover ordenação personalizada"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSortBy(DEFAULT_TASK_SORT_BY);
+                        setSortDir(DEFAULT_TASK_SORT_DIR);
+                        pushDashboard(
+                          buildSearchParamsFrom({
+                            filters: applied,
+                            page: 1,
+                            sortBy: DEFAULT_TASK_SORT_BY,
+                            sortDir: DEFAULT_TASK_SORT_DIR,
+                          }),
+                        );
+                      }}
+                    >
+                      x
+                    </ActionIcon>
+                  }
+                >
+                  Ordenação: {sortByLabelMap[appliedSort.sortBy]} {dirSymbol}
                 </Badge>,
               );
             }
@@ -259,7 +444,7 @@ export function DashboardPageClient(props: {
         <Pagination
           value={props.page}
           total={totalPages}
-          onChange={(p) => router.push(`/dashboard?${buildSearchParams({ page: p }).toString()}`)}
+          onChange={(p) => pushDashboard(buildSearchParams({ page: p }))}
         />
       </Group>
 

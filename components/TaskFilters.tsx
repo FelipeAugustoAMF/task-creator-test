@@ -2,6 +2,7 @@
 
 import {
   Button,
+  Divider,
   Grid,
   Group,
   MultiSelect,
@@ -43,11 +44,11 @@ export function TaskFilters(props: {
   onClear: () => void;
 }) {
   return (
-    <Stack gap="sm">
+    <Stack gap="md">
       <Grid>
         <Grid.Col span={{ base: 12, md: 6 }}>
           <TextInput
-            label="Busca"
+            label="Título"
             placeholder="Título ou descrição"
             value={props.value.search}
             onChange={(e) => props.onChange({ ...props.value, search: e.currentTarget.value })}
@@ -130,16 +131,16 @@ export function TaskFilters(props: {
             />
           </Group>
         </Grid.Col>
-
-        <Grid.Col span={{ base: 12, md: 4 }}>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={props.onClear}>
-              Limpar
-            </Button>
-            <Button onClick={props.onApply}>Aplicar</Button>
-          </Group>
-        </Grid.Col>
       </Grid>
+
+      <Divider />
+
+      <Group justify="flex-end">
+        <Button variant="default" onClick={props.onClear}>
+          Remover
+        </Button>
+        <Button onClick={props.onApply}>Aplicar</Button>
+      </Group>
     </Stack>
   );
 }
