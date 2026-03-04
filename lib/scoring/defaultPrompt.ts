@@ -24,6 +24,15 @@ JSON esperado (estrito):
 
 Definições de category:
 - incidente: algo quebrado/agudo com impacto imediato (ex.: sistema fora, risco alto, bloqueio).
+- saúde: tarefa relacionada à saúde física ou mental.
+- lazer: tarefa relacionada a atividades de lazer, hobbies ou entretenimento.
+- educação: tarefa relacionada a aprendizado, estudos ou desenvolvimento de habilidades.
+- trabalho: tarefa relacionada a responsabilidades profissionais, projetos ou carreira.
+- urgência: tarefa que tem um prazo próximo ou consequências imediatas se não for feita.
+- impacto: tarefa que, se feita, terá um impacto significativo positivo (ou negativo se não feita).
+- esforço: tarefa que requer uma quantidade significativa de tempo, energia ou recursos para ser concluída.
+- risco: tarefa que, se não feita, pode levar a consequências negativas significativas (ex.: perda de dados, problemas de segurança, impacto financeiro).
+- bem-estar: tarefa relacionada a autocuidado, saúde mental, exercícios ou atividades que promovem o bem-estar geral.
 - defeito: correção de erro/falha em algo existente.
 - melhoria: nova funcionalidade ou melhoria incremental (produto/processo).
 - manutenção: rotina/infra/confiabilidade/ajustes operacionais.
