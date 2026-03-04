@@ -59,13 +59,13 @@ export function DashboardPageClient(props: {
     <Stack gap="md">
       <Group justify="space-between" align="flex-end">
         <Stack gap={2}>
-          <Title order={2}>Tasks</Title>
+          <Title order={2}>Tarefas</Title>
           <Text c="dimmed" size="sm">
-            {props.total} total
+            {props.total} no total
           </Text>
         </Stack>
 
-        <Button onClick={() => setModalOpen(true)}>New Task</Button>
+        <Button onClick={() => setModalOpen(true)}>Nova tarefa</Button>
       </Group>
 
       <Card withBorder>
@@ -98,4 +98,3 @@ export function DashboardPageClient(props: {
     </Stack>
   );
 }
-

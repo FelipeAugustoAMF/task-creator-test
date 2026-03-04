@@ -20,8 +20,8 @@ export function TaskFormModal(props: {
       description: "",
     },
     validate: {
-      title: (v) => (v.trim().length === 0 ? "Title is required" : null),
-      description: (v) => (v.trim().length === 0 ? "Description is required" : null),
+      title: (v) => (v.trim().length === 0 ? "Título é obrigatório" : null),
+      description: (v) => (v.trim().length === 0 ? "Descrição é obrigatória" : null),
     },
   });
 
@@ -31,16 +31,18 @@ export function TaskFormModal(props: {
       if (!result.ok) {
         notifications.show({
           color: "red",
-          title: "Failed to create task",
-          message: result.taskId ? `${result.message} (taskId: ${result.taskId})` : result.message,
+          title: "Falha ao criar tarefa",
+          message: result.taskId
+            ? `${result.message} (taskId: ${result.taskId})`
+            : result.message,
         });
         return;
       }
 
       notifications.show({
         color: "green",
-        title: "Task created",
-        message: `Score: ${result.task.score ?? "-"} • Category: ${result.task.category ?? "-"}`,
+        title: "Tarefa criada",
+        message: `Score: ${result.task.score ?? "-"} • Categoria: ${result.task.category ?? "-"}`,
       });
 
       form.reset();
@@ -49,23 +51,22 @@ export function TaskFormModal(props: {
   }
 
   return (
-    <Modal opened={props.opened} onClose={props.onClose} title="New Task" centered>
+    <Modal opened={props.opened} onClose={props.onClose} title="Nova tarefa" centered>
       <form onSubmit={form.onSubmit(onSubmit)}>
         <Stack>
-          <TextInput label="Title" placeholder="Short summary" {...form.getInputProps("title")} />
+          <TextInput label="Título" placeholder="Resumo curto" {...form.getInputProps("title")} />
           <Textarea
-            label="Description"
-            placeholder="Context, steps, impact, deadlines…"
+            label="Descrição"
+            placeholder="Contexto, passos, impacto, prazos…"
             autosize
             minRows={5}
             {...form.getInputProps("description")}
           />
           <Button type="submit" loading={isPending}>
-            Create & Score
+            Criar e pontuar
           </Button>
         </Stack>
       </form>
     </Modal>
   );
 }
-

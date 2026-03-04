@@ -8,7 +8,7 @@ import { ScoringRunRow } from "@/lib/tasks/types";
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return date.toLocaleString("pt-BR");
 }
 
 export function PromptRunViewer(props: { runs: ScoringRunRow[] }) {
@@ -16,7 +16,7 @@ export function PromptRunViewer(props: { runs: ScoringRunRow[] }) {
     return (
       <Card withBorder>
         <Text c="dimmed" size="sm">
-          No scoring runs yet.
+          Nenhum log de scoring ainda.
         </Text>
       </Card>
     );
@@ -24,7 +24,7 @@ export function PromptRunViewer(props: { runs: ScoringRunRow[] }) {
 
   return (
     <Stack gap="md">
-      <Title order={4}>Scoring Runs</Title>
+      <Title order={4}>Logs de scoring</Title>
 
       <Accordion variant="separated" multiple>
         {props.runs.map((run) => {
@@ -57,21 +57,21 @@ export function PromptRunViewer(props: { runs: ScoringRunRow[] }) {
               <Accordion.Panel>
                 <Stack gap="sm">
                   <Textarea
-                    label="Rendered prompt"
+                    label="Prompt renderizado"
                     value={run.rendered_prompt}
                     readOnly
                     autosize
                     minRows={6}
                   />
                   <Textarea
-                    label="Raw response"
+                    label="Resposta bruta"
                     value={run.raw_response}
                     readOnly
                     autosize
                     minRows={6}
                   />
                   <Textarea
-                    label="Parsed output"
+                    label="Saída parseada"
                     value={parsed || "—"}
                     readOnly
                     autosize
@@ -86,4 +86,3 @@ export function PromptRunViewer(props: { runs: ScoringRunRow[] }) {
     </Stack>
   );
 }
-

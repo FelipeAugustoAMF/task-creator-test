@@ -7,7 +7,7 @@ let cachedClient: OpenAI | null = null;
 export function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("Missing OPENAI_API_KEY");
+    throw new Error("Faltando OPENAI_API_KEY");
   }
 
   if (!cachedClient) {
@@ -16,4 +16,3 @@ export function getOpenAIClient() {
 
   return cachedClient;
 }
-

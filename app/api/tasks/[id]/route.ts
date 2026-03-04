@@ -11,7 +11,7 @@ export async function GET(request: Request, context: { params: { id: string } })
   try {
     const task = await getTaskById(context.params.id);
     if (!task) {
-      return Response.json({ message: "Not found" }, { status: 404 });
+      return Response.json({ message: "Não encontrado" }, { status: 404 });
     }
     return Response.json({ task });
   } catch (error) {
@@ -21,4 +21,3 @@ export async function GET(request: Request, context: { params: { id: string } })
     );
   }
 }
-

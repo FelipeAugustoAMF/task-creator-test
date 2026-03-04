@@ -7,7 +7,7 @@ import { Providers } from "@/app/providers";
 
 export const metadata = {
   title: "The Hybrid Architect",
-  description: "AI-Priority Middleware MVP",
+  description: "MVP de middleware de prioridade com IA",
 };
 
 export default function RootLayout({
@@ -23,4 +23,3 @@ export default function RootLayout({
     </html>
   );
 }
-

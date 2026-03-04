@@ -24,7 +24,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <NavLink
           component={Link}
           href="/dashboard"
-          label="Tasks"
+          label="Tarefas"
           active={pathname === "/dashboard"}
         />
       </AppShell.Navbar>
@@ -33,4 +33,3 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     </AppShell>
   );
 }
-

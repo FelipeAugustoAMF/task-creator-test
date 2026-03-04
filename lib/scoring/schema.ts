@@ -1,13 +1,16 @@
 import { z } from "zod";
 
 export const scoringCategoryValues = [
-  "incident",
-  "bug",
-  "feature",
-  "ops",
-  "finance",
-  "support",
-  "other",
+  "incidente",
+  "defeito",
+  "melhoria",
+  "manutenção",
+  "segurança",
+  "financeiro",
+  "suporte",
+  "administrativo",
+  "pessoal",
+  "outro",
 ] as const;
 
 export type ScoringCategory = (typeof scoringCategoryValues)[number];
@@ -57,10 +60,34 @@ function normalizeTags(input: unknown): string[] {
 
 function normalizeCategory(input: string): ScoringCategory {
   const cleaned = input.trim().toLowerCase();
-  if ((scoringCategoryValues as readonly string[]).includes(cleaned)) {
-    return cleaned as ScoringCategory;
+
+  const legacyMap: Record<string, ScoringCategory> = {
+    incident: "incidente",
+    bug: "defeito",
+    feature: "melhoria",
+    ops: "manutenção",
+    finance: "financeiro",
+    support: "suporte",
+    other: "outro",
+
+    // Common pt-BR variants without accents
+    manutencao: "manutenção",
+    seguranca: "segurança",
+
+    // Synonyms
+    erro: "defeito",
+    falha: "defeito",
+    correcao: "defeito",
+    correção: "defeito",
+  };
+
+  const candidate = legacyMap[cleaned] ?? cleaned;
+
+  if ((scoringCategoryValues as readonly string[]).includes(candidate)) {
+    return candidate as ScoringCategory;
   }
-  return "other";
+
+  return "outro";
 }
 
 function normalizeRationale(input: string): string {
@@ -83,4 +110,3 @@ export function parseAndNormalizeScoringOutput(json: unknown): ScoringOutput {
     confidence,
   };
 }
-

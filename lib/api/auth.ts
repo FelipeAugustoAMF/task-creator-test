@@ -4,7 +4,7 @@ export function requireAppApiKey(request: Request): Response | null {
   const configuredKey = process.env.APP_API_KEY;
   if (!configuredKey) {
     return Response.json(
-      { message: "Server misconfigured: missing APP_API_KEY" },
+      { message: "Servidor mal configurado: faltando APP_API_KEY" },
       { status: 500 },
     );
   }
@@ -14,9 +14,8 @@ export function requireAppApiKey(request: Request): Response | null {
   const token = match?.[1]?.trim();
 
   if (!token || token !== configuredKey) {
-    return Response.json({ message: "Unauthorized" }, { status: 401 });
+    return Response.json({ message: "Não autorizado" }, { status: 401 });
   }
 
   return null;
 }
-

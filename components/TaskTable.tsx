@@ -13,10 +13,35 @@ import React from "react";
 
 import { TaskRow } from "@/lib/tasks/types";
 
+const categoryLabelMap: Record<string, string> = {
+  incident: "Incidente",
+  bug: "Defeito",
+  feature: "Melhoria",
+  ops: "Manutenção",
+  finance: "Financeiro",
+  support: "Suporte",
+  other: "Outro",
+
+  incidente: "Incidente",
+  defeito: "Defeito",
+  melhoria: "Melhoria",
+  manutenção: "Manutenção",
+  segurança: "Segurança",
+  financeiro: "Financeiro",
+  suporte: "Suporte",
+  administrativo: "Administrativo",
+  pessoal: "Pessoal",
+  outro: "Outro",
+};
+
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return date.toLocaleString("pt-BR");
+}
+
+function formatCategory(value: string) {
+  return categoryLabelMap[value] || value;
 }
 
 export function TaskTable(props: { tasks: TaskRow[] }) {
@@ -26,10 +51,10 @@ export function TaskTable(props: { tasks: TaskRow[] }) {
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Score</Table.Th>
-            <Table.Th>Title</Table.Th>
-            <Table.Th>Category</Table.Th>
+            <Table.Th>Título</Table.Th>
+            <Table.Th>Categoria</Table.Th>
             <Table.Th>Tags</Table.Th>
-            <Table.Th>Created</Table.Th>
+            <Table.Th>Criada em</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -37,7 +62,7 @@ export function TaskTable(props: { tasks: TaskRow[] }) {
             <Table.Tr>
               <Table.Td colSpan={5}>
                 <Text c="dimmed" size="sm">
-                  No tasks found.
+                  Nenhuma tarefa encontrada.
                 </Text>
               </Table.Td>
             </Table.Tr>
@@ -47,7 +72,7 @@ export function TaskTable(props: { tasks: TaskRow[] }) {
                 <Table.Td>
                   {task.status !== "done" ? (
                     <Badge color="red" variant="light">
-                      failed
+                      falhou
                     </Badge>
                   ) : (
                     <Badge color="indigo" variant="light">
@@ -63,7 +88,7 @@ export function TaskTable(props: { tasks: TaskRow[] }) {
                 <Table.Td>
                   {task.category ? (
                     <Badge color="gray" variant="light">
-                      {task.category}
+                      {formatCategory(task.category)}
                     </Badge>
                   ) : (
                     <Text c="dimmed" size="sm">
@@ -95,4 +120,3 @@ export function TaskTable(props: { tasks: TaskRow[] }) {
     </ScrollArea>
   );
 }
-

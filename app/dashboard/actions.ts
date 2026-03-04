@@ -21,7 +21,7 @@ export async function createTaskAction(input: {
 }): Promise<CreateTaskActionResult> {
   const parsed = createTaskSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, message: "Invalid input" };
+    return { ok: false, message: "Entrada inválida" };
   }
 
   const result = await createTaskAndScore(parsed.data);
@@ -32,4 +32,3 @@ export async function createTaskAction(input: {
   revalidatePath("/dashboard");
   return { ok: true, task: result.task };
 }
-

@@ -1,5 +1,10 @@
 import "server-only";
 
+import {
+  DEFAULT_PROMPT_NAME,
+  DEFAULT_PROMPT_TEMPLATE,
+  DEFAULT_PROMPT_VERSION,
+} from "@/lib/scoring/defaultPrompt";
 import { renderPrompt } from "@/lib/scoring/prompt";
 import { scoreTaskWithOpenAI } from "@/lib/scoring/scoreTask";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
@@ -13,6 +18,40 @@ export type CreateTaskInput = {
 export type CreateTaskResult =
   | { ok: true; task: TaskRow }
   | { ok: false; taskId: string; message: string };
+
+async function getOrSeedDefaultPrompt(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+): Promise<PromptRow> {
+  const { data: prompt, error } = await supabase
+    .from("prompts")
+    .select("*")
+    .eq("name", DEFAULT_PROMPT_NAME)
+    .order("version", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  const typedPrompt = (prompt as PromptRow | null) ?? null;
+  if (typedPrompt && typedPrompt.version >= DEFAULT_PROMPT_VERSION) return typedPrompt;
+
+  const { data: seededPrompt, error: seedError } = await supabase
+    .from("prompts")
+    .insert({
+      name: DEFAULT_PROMPT_NAME,
+      version: DEFAULT_PROMPT_VERSION,
+      template: DEFAULT_PROMPT_TEMPLATE,
+    })
+    .select("*")
+    .single();
+
+  if (seedError || !seededPrompt) {
+    throw new Error(seedError?.message || 'Falha ao criar o prompt "default"');
+  }
+
+  return seededPrompt as PromptRow;
+}
 
 export async function createTaskAndScore(input: CreateTaskInput): Promise<CreateTaskResult> {
   const supabase = getSupabaseAdmin();
@@ -32,29 +71,22 @@ export async function createTaskAndScore(input: CreateTaskInput): Promise<Create
     return {
       ok: false,
       taskId: "unknown",
-      message: insertError?.message || "Failed to insert task",
+      message: insertError?.message || "Falha ao inserir tarefa",
     };
   }
 
   const taskId = insertedTask.id;
 
-  const { data: prompt, error: promptError } = await supabase
-    .from("prompts")
-    .select("*")
-    .eq("name", "default")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (promptError || !prompt) {
+  let typedPrompt: PromptRow;
+  try {
+    typedPrompt = await getOrSeedDefaultPrompt(supabase);
+  } catch (error) {
     return {
       ok: false,
       taskId,
-      message: promptError?.message || 'Missing prompt "default"',
+      message: error instanceof Error ? error.message : String(error),
     };
   }
-
-  const typedPrompt = prompt as PromptRow;
 
   const renderedPrompt = renderPrompt(typedPrompt.template, {
     task_id: taskId,
@@ -83,7 +115,7 @@ export async function createTaskAndScore(input: CreateTaskInput): Promise<Create
     return {
       ok: false,
       taskId,
-      message: `Failed to insert scoring run: ${runError.message}`,
+      message: `Falha ao inserir log de scoring: ${runError.message}`,
     };
   }
 
@@ -109,7 +141,9 @@ export async function createTaskAndScore(input: CreateTaskInput): Promise<Create
     return {
       ok: false,
       taskId,
-      message: updateError?.message || "Failed to update task with scoring output",
+      message:
+        updateError?.message ||
+        "Falha ao atualizar a tarefa com o resultado do scoring",
     };
   }
 

@@ -8,8 +8,8 @@ export function getSupabaseAdmin() {
   const url = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url) throw new Error("Missing SUPABASE_URL");
-  if (!serviceRoleKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
+  if (!url) throw new Error("Faltando SUPABASE_URL");
+  if (!serviceRoleKey) throw new Error("Faltando SUPABASE_SERVICE_ROLE_KEY");
 
   if (!cachedAdminClient) {
     cachedAdminClient = createClient(url, serviceRoleKey, {
@@ -19,4 +19,3 @@ export function getSupabaseAdmin() {
 
   return cachedAdminClient;
 }
-

@@ -46,7 +46,7 @@ Regras importantes:
 1. Crie um projeto no Supabase.
 2. Vá em **SQL Editor** e rode o arquivo `supabase/schema.sql`.
 
-Esse script cria as tabelas e faz seed de um prompt `default` (version 1).
+Esse script cria as tabelas e faz seed de um prompt `default` (version 2).
 
 ## 4) Testar endpoints (curl)
 
@@ -74,7 +74,7 @@ curl.exe -X POST "http://localhost:3000/api/tasks" `
 ### 4.2) GET /api/tasks (lista paginada + filtros)
 
 ```bash
-curl "http://localhost:3000/api/tasks?page=1&pageSize=20&category=bug&scoreMin=7&search=checkout" \
+curl "http://localhost:3000/api/tasks?page=1&pageSize=20&category=defeito&scoreMin=7&search=checkout" \
   -H "Authorization: Bearer $APP_API_KEY"
 ```
 
@@ -112,4 +112,3 @@ curl "http://localhost:3000/api/prompts" \
 - `app/dashboard/*`: dashboard (Mantine + Server Actions)
 - `lib/scoring/*`: prompt rendering + parsing + guardrails + chamada OpenAI
 - `supabase/schema.sql`: DDL + seed do prompt `default`
-

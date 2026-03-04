@@ -11,14 +11,17 @@ export type TaskFiltersValue = {
 };
 
 const categoryOptions = [
-  { value: "", label: "All" },
-  { value: "incident", label: "incident" },
-  { value: "bug", label: "bug" },
-  { value: "feature", label: "feature" },
-  { value: "ops", label: "ops" },
-  { value: "finance", label: "finance" },
-  { value: "support", label: "support" },
-  { value: "other", label: "other" },
+  { value: "", label: "Todas" },
+  { value: "incidente", label: "Incidente" },
+  { value: "defeito", label: "Defeito" },
+  { value: "melhoria", label: "Melhoria" },
+  { value: "manutenção", label: "Manutenção" },
+  { value: "segurança", label: "Segurança" },
+  { value: "financeiro", label: "Financeiro" },
+  { value: "suporte", label: "Suporte" },
+  { value: "administrativo", label: "Administrativo" },
+  { value: "pessoal", label: "Pessoal" },
+  { value: "outro", label: "Outro" },
 ];
 
 export function TaskFilters(props: {
@@ -31,15 +34,15 @@ export function TaskFilters(props: {
     <Stack gap="sm">
       <Group align="flex-end">
         <TextInput
-          label="Search"
-          placeholder="Title or description"
+          label="Busca"
+          placeholder="Título ou descrição"
           value={props.value.search}
           onChange={(e) => props.onChange({ ...props.value, search: e.currentTarget.value })}
           style={{ flex: 1 }}
         />
 
         <Select
-          label="Category"
+          label="Categoria"
           data={categoryOptions}
           value={props.value.category}
           onChange={(value) => props.onChange({ ...props.value, category: value || "" })}
@@ -47,7 +50,7 @@ export function TaskFilters(props: {
         />
 
         <NumberInput
-          label="Score min"
+          label="Score mínimo"
           min={1}
           max={10}
           clampBehavior="strict"
@@ -62,7 +65,7 @@ export function TaskFilters(props: {
         />
 
         <NumberInput
-          label="Score max"
+          label="Score máximo"
           min={1}
           max={10}
           clampBehavior="strict"
@@ -79,11 +82,10 @@ export function TaskFilters(props: {
 
       <Group justify="flex-end">
         <Button variant="default" onClick={props.onClear}>
-          Clear
+          Limpar
         </Button>
-        <Button onClick={props.onApply}>Apply</Button>
+        <Button onClick={props.onApply}>Aplicar</Button>
       </Group>
     </Stack>
   );
 }
-

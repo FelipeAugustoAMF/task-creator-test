@@ -10,7 +10,18 @@ const outputJsonSchema = {
     score: { type: "integer", minimum: 1, maximum: 10 },
     category: {
       type: "string",
-      enum: ["incident", "bug", "feature", "ops", "finance", "support", "other"],
+      enum: [
+        "incidente",
+        "defeito",
+        "melhoria",
+        "manutenção",
+        "segurança",
+        "financeiro",
+        "suporte",
+        "administrativo",
+        "pessoal",
+        "outro",
+      ],
     },
     tags: { type: "array", items: { type: "string" }, maxItems: 8 },
     rationale: { type: "string" },
@@ -90,7 +101,7 @@ export async function scoreTaskWithOpenAI(params: {
 
   const attemptPrompts = [
     params.renderedPrompt,
-    `${params.renderedPrompt}\n\nIMPORTANT: Return ONLY valid JSON. VALID JSON ONLY. No markdown. No extra text.`,
+    `${params.renderedPrompt}\n\nIMPORTANTE: Responda SOMENTE com JSON válido. JSON VÁLIDO APENAS. Sem markdown. Sem texto extra. Escreva os valores textuais em português brasileiro (pt-BR) e use 'category' em português (ex.: incidente, defeito, melhoria, manutenção, segurança, financeiro, suporte, administrativo, pessoal, outro).`,
   ];
 
   let lastRawResponse = "";
@@ -122,4 +133,3 @@ export async function scoreTaskWithOpenAI(params: {
     error: lastError || "Failed to score task",
   };
 }
-

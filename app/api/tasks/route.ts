@@ -19,13 +19,13 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ message: "Invalid JSON body" }, { status: 400 });
+    return Response.json({ message: "Body JSON inválido" }, { status: 400 });
   }
 
   const parsed = createTaskSchema.safeParse(body);
   if (!parsed.success) {
     return Response.json(
-      { message: "Invalid input", issues: parsed.error.flatten() },
+      { message: "Entrada inválida", issues: parsed.error.flatten() },
       { status: 400 },
     );
   }

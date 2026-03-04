@@ -16,10 +16,40 @@ import React from "react";
 import { PromptRunViewer } from "@/components/PromptRunViewer";
 import { ScoringRunRow, TaskRow } from "@/lib/tasks/types";
 
+const categoryLabelMap: Record<string, string> = {
+  incident: "Incidente",
+  bug: "Defeito",
+  feature: "Melhoria",
+  ops: "Manutenção",
+  finance: "Financeiro",
+  support: "Suporte",
+  other: "Outro",
+
+  incidente: "Incidente",
+  defeito: "Defeito",
+  melhoria: "Melhoria",
+  manutenção: "Manutenção",
+  segurança: "Segurança",
+  financeiro: "Financeiro",
+  suporte: "Suporte",
+  administrativo: "Administrativo",
+  pessoal: "Pessoal",
+  outro: "Outro",
+};
+
+const statusLabelMap: Record<string, string> = {
+  done: "concluída",
+  failed: "falhou",
+};
+
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return date.toLocaleString("pt-BR");
+}
+
+function formatCategory(value: string) {
+  return categoryLabelMap[value] || value;
 }
 
 export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }) {
@@ -30,7 +60,7 @@ export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }
       <Group justify="space-between" align="flex-start">
         <Stack gap={2}>
           <Anchor component={Link} href="/dashboard" size="sm">
-            ← Back to Tasks
+            ← Voltar para tarefas
           </Anchor>
           <Title order={2}>{task.title}</Title>
           <Text c="dimmed" size="sm">
@@ -40,7 +70,7 @@ export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }
 
         <Group>
           <Badge color={task.status === "done" ? "indigo" : "red"} variant="light">
-            {task.status}
+            {statusLabelMap[task.status] || task.status}
           </Badge>
           {task.status === "done" && (
             <Badge color="gray" variant="light">
@@ -52,19 +82,19 @@ export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }
 
       <Tabs defaultValue="details">
         <Tabs.List>
-          <Tabs.Tab value="details">Details</Tabs.Tab>
-          <Tabs.Tab value="logs">Prompt Logs</Tabs.Tab>
+          <Tabs.Tab value="details">Detalhes</Tabs.Tab>
+          <Tabs.Tab value="logs">Logs de prompt</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="details" pt="md">
           <Card withBorder>
             <Stack gap="sm">
               <Group gap="xs">
-                <Text fw={600}>Category:</Text>
-                <Text>{task.category || "—"}</Text>
+                <Text fw={600}>Categoria:</Text>
+                <Text>{task.category ? formatCategory(task.category) : "—"}</Text>
               </Group>
               <Group gap="xs">
-                <Text fw={600}>Confidence:</Text>
+                <Text fw={600}>Confiança:</Text>
                 <Text>
                   {typeof task.confidence === "number" ? task.confidence.toFixed(2) : "—"}
                 </Text>
@@ -84,11 +114,11 @@ export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }
                 </Group>
               </Group>
               <Group gap="xs" align="flex-start">
-                <Text fw={600}>Rationale:</Text>
+                <Text fw={600}>Justificativa:</Text>
                 <Text style={{ flex: 1 }}>{task.rationale || "—"}</Text>
               </Group>
               <Stack gap={4}>
-                <Text fw={600}>Description</Text>
+                <Text fw={600}>Descrição</Text>
                 <Text style={{ whiteSpace: "pre-wrap" }}>{task.description}</Text>
               </Stack>
             </Stack>
@@ -102,4 +132,3 @@ export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }
     </Stack>
   );
 }
-
