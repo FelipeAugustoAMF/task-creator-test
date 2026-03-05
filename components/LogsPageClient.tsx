@@ -1,31 +1,37 @@
 "use client";
 
 import {
+  ActionIcon,
   Anchor,
   Badge,
   Button,
   Card,
+  Collapse,
   Grid,
   Group,
   Modal,
   Pagination,
   ScrollArea,
+  Select,
   Stack,
   Table,
   Text,
-  TextInput,
   Textarea,
   Title,
 } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 
+import { formatYmdDate, parseYmdDate } from "@/lib/dates/ymd";
+import { OPENAI_LIGHT_MODEL_OPTIONS } from "@/lib/openai/models";
 import { ScoringRunWithTaskRow } from "@/lib/tasks/types";
 
 type LogsFiltersValue = {
   from: string;
   to: string;
+  model: string;
 };
 
 function formatDate(value: string) {
@@ -57,7 +63,10 @@ export function LogsPageClient(props: {
   const returnToRaw = searchParams.get("returnTo");
   const returnTo = returnToRaw && returnToRaw.startsWith("/dashboard") ? returnToRaw : null;
   const [filters, setFilters] = useState<LogsFiltersValue>(props.initialFilters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<ScoringRunWithTaskRow | null>(null);
+  const fromDate = useMemo(() => parseYmdDate(filters.from), [filters.from]);
+  const toDate = useMemo(() => parseYmdDate(filters.to), [filters.to]);
 
   useEffect(() => {
     setFilters(props.initialFilters);
@@ -72,6 +81,7 @@ export function LogsPageClient(props: {
     if (returnTo) sp.set("returnTo", returnTo);
     if (filters.from?.trim()) sp.set("from", filters.from.trim());
     if (filters.to?.trim()) sp.set("to", filters.to.trim());
+    if (filters.model?.trim()) sp.set("model", filters.model.trim());
     sp.set("page", String(next.page ?? props.page));
     return sp;
   }
@@ -81,7 +91,7 @@ export function LogsPageClient(props: {
   }
 
   function clearFilters() {
-    setFilters({ from: "", to: "" });
+    setFilters({ from: "", to: "", model: "" });
     if (returnTo) {
       router.push(`/dashboard/logs?${new URLSearchParams({ returnTo }).toString()}`);
     } else {
@@ -101,24 +111,110 @@ export function LogsPageClient(props: {
       </Group>
 
       <Card withBorder>
-        <Grid align="flex-end">
+        <Group
+          justify="space-between"
+          align="center"
+          onClick={() => setFiltersOpen((v) => !v)}
+          style={{ cursor: "pointer" }}
+        >
+          <Text fw={600}>Filtros</Text>
+          <ActionIcon
+            variant="subtle"
+            aria-label={filtersOpen ? "Recolher filtros" : "Expandir filtros"}
+          >
+            {filtersOpen ? "▲" : "▼"}
+          </ActionIcon>
+        </Group>
+
+        <Group gap={8} mt="sm" wrap="wrap">
+          {(() => {
+            const applied = props.initialFilters;
+            const chips: React.ReactNode[] = [];
+
+            const from = applied.from?.trim();
+            const to = applied.to?.trim();
+            if (from || to) {
+              const dateLabel =
+                from && to ? `${from} → ${to}` : from ? `≥ ${from}` : `≤ ${to}`;
+              chips.push(
+                <Badge key="date" variant="light" color="gray">
+                  Data: {dateLabel}
+                </Badge>,
+              );
+            }
+
+            const model = applied.model?.trim();
+            if (model) {
+              chips.push(
+                <Badge key="model" variant="light" color="gray">
+                  Modelo: {model}
+                </Badge>,
+              );
+            }
+
+            if (chips.length === 0) {
+              return (
+                <Text key="none" c="dimmed" size="sm">
+                  Nenhum filtro aplicado.
+                </Text>
+              );
+            }
+
+            return chips;
+          })()}
+        </Group>
+
+        <Collapse in={filtersOpen}>
+          <Grid align="flex-end" mt="md">
           <Grid.Col span={{ base: 6, md: 3 }}>
-            <TextInput
-              type="date"
+            <DateInput
               label="De"
-              value={filters.from}
-              onChange={(e) => setFilters({ ...filters, from: e.currentTarget.value })}
+              value={fromDate}
+              onChange={(date) => {
+                const nextFrom = formatYmdDate(date);
+                setFilters((current) => ({
+                  ...current,
+                  from: nextFrom,
+                  to:
+                    nextFrom && current.to.trim() && current.to < nextFrom ? nextFrom : current.to,
+                }));
+              }}
+              valueFormat="DD/MM/YYYY"
+              maxDate={toDate ?? undefined}
+              clearable
             />
           </Grid.Col>
           <Grid.Col span={{ base: 6, md: 3 }}>
-            <TextInput
-              type="date"
+            <DateInput
               label="Até"
-              value={filters.to}
-              onChange={(e) => setFilters({ ...filters, to: e.currentTarget.value })}
+              value={toDate}
+              onChange={(date) => {
+                const nextTo = formatYmdDate(date);
+                setFilters((current) => ({
+                  ...current,
+                  to: nextTo,
+                  from:
+                    nextTo && current.from.trim() && current.from > nextTo ? nextTo : current.from,
+                }));
+              }}
+              valueFormat="DD/MM/YYYY"
+              minDate={fromDate ?? undefined}
+              clearable
             />
           </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 6 }}>
+          <Grid.Col span={{ base: 12, md: 3 }}>
+            <Select
+              label="Modelo (OpenAI)"
+              placeholder="Todos"
+              data={OPENAI_LIGHT_MODEL_OPTIONS}
+              value={filters.model}
+              onChange={(value) => setFilters((current) => ({ ...current, model: value || "" }))}
+              clearable
+              searchable
+              nothingFoundMessage="Nenhum modelo encontrado"
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, md: 3 }}>
             <Group justify="flex-end">
               <Button variant="default" onClick={clearFilters}>
                 Limpar
@@ -126,7 +222,8 @@ export function LogsPageClient(props: {
               <Button onClick={applyFilters}>Aplicar</Button>
             </Group>
           </Grid.Col>
-        </Grid>
+          </Grid>
+        </Collapse>
       </Card>
 
       <Card withBorder p={0}>

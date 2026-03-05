@@ -1,11 +1,18 @@
 "use client";
 
-import { Button, Modal, Stack, TextInput, Textarea } from "@mantine/core";
+import { Button, Modal, Select, Stack, TextInput, Textarea } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import React, { useTransition } from "react";
 
 import { createTaskAction } from "@/app/dashboard/actions";
+import { OPENAI_LIGHT_MODEL_OPTIONS, OPENAI_LIGHT_MODEL_VALUES } from "@/lib/openai/models";
+
+type TaskFormValues = {
+  title: string;
+  description: string;
+  model: string;
+};
 
 export function TaskFormModal(props: {
   opened: boolean;
@@ -14,10 +21,11 @@ export function TaskFormModal(props: {
 }) {
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm({
+  const form = useForm<TaskFormValues>({
     initialValues: {
       title: "",
       description: "",
+      model: OPENAI_LIGHT_MODEL_VALUES[0],
     },
     validate: {
       title: (v) => (v.trim().length === 0 ? "Título é obrigatório" : null),
@@ -25,7 +33,7 @@ export function TaskFormModal(props: {
     },
   });
 
-  function onSubmit(values: { title: string; description: string }) {
+  function onSubmit(values: TaskFormValues) {
     startTransition(async () => {
       const result = await createTaskAction(values);
       if (!result.ok) {
@@ -61,6 +69,18 @@ export function TaskFormModal(props: {
             autosize
             minRows={5}
             {...form.getInputProps("description")}
+          />
+          <Select
+            label="Modelo (OpenAI)"
+            description="Usado para pontuar esta tarefa"
+            data={OPENAI_LIGHT_MODEL_OPTIONS}
+            value={form.values.model}
+            onChange={(value) =>
+              form.setFieldValue("model", value || OPENAI_LIGHT_MODEL_VALUES[0])
+            }
+            allowDeselect={false}
+            searchable
+            nothingFoundMessage="Nenhum modelo encontrado"
           />
           <Button type="submit" loading={isPending}>
             Criar e pontuar

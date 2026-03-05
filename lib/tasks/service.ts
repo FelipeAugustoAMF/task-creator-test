@@ -1,5 +1,6 @@
 import "server-only";
 
+import { coerceOpenAILightModel } from "@/lib/openai/models";
 import {
   DEFAULT_PROMPT_NAME,
   DEFAULT_PROMPT_TEMPLATE,
@@ -26,6 +27,7 @@ import {
 export type CreateTaskInput = {
   title: string;
   description: string;
+  model?: string;
 };
 
 export type CreateTaskResult =
@@ -114,7 +116,8 @@ export async function createTaskAndScore(input: CreateTaskInput): Promise<Create
     renderedPrompt = `${renderedPrompt}\n\nTags permitidas (escolha somente desta lista; máximo 8; use exatamente como escrito):\n${allowedTags}`;
   }
 
-  const scoreResult = await scoreTaskWithOpenAI({ renderedPrompt });
+  const model = coerceOpenAILightModel(input.model);
+  const scoreResult = await scoreTaskWithOpenAI({ renderedPrompt, model });
 
   const scoringRunInsert = {
     task_id: taskId,
@@ -303,6 +306,7 @@ export type ListScoringRunsParams = {
   pageSize: number;
   from?: string;
   to?: string;
+  model?: string;
 };
 
 export async function listScoringRuns(params: ListScoringRunsParams): Promise<{
@@ -332,6 +336,10 @@ export async function listScoringRuns(params: ListScoringRunsParams): Promise<{
   if (params.to) {
     const toIso = toIsoBoundary(params.to, "end");
     if (toIso) query = query.lte("created_at", toIso);
+  }
+
+  if (params.model) {
+    query = query.eq("model", params.model);
   }
 
   const { data, error, count } = await query

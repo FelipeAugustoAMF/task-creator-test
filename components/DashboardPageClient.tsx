@@ -56,27 +56,29 @@ export function DashboardPageClient(props: {
   useEffect(() => {
     if (!filtersOpen) return;
 
-    function onMouseDown(event: MouseEvent) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
+      function onMouseDown(event: MouseEvent) {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
 
-      if (filtersCardRef.current?.contains(target)) return;
+        if (filtersCardRef.current?.contains(target)) return;
 
-      // Select/MultiSelect dropdown (portal) - keep filtros abertos durante interação
-      if (target.closest?.("[data-composed]")) return;
+        // Select/MultiSelect dropdown (portal) - keep filtros abertos durante interação
+        if (target.closest?.("[data-composed]")) return;
+        if (target.closest?.("[data-portal]")) return;
 
-      setFiltersOpen(false);
-    }
+        setFiltersOpen(false);
+      }
 
-    function onTouchStart(event: TouchEvent) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
+      function onTouchStart(event: TouchEvent) {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
 
-      if (filtersCardRef.current?.contains(target)) return;
-      if (target.closest?.("[data-composed]")) return;
+        if (filtersCardRef.current?.contains(target)) return;
+        if (target.closest?.("[data-composed]")) return;
+        if (target.closest?.("[data-portal]")) return;
 
-      setFiltersOpen(false);
-    }
+        setFiltersOpen(false);
+      }
 
     document.addEventListener("mousedown", onMouseDown);
     document.addEventListener("touchstart", onTouchStart);

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Anchor,
   Badge,
   Button,
   Card,
@@ -108,9 +107,16 @@ export function TaskDetailClient(props: { task: TaskRow }) {
     <Stack gap="md">
       <Group justify="space-between" align="flex-start">
         <Stack gap={2}>
-          <Anchor component={Link} href={returnTo} size="sm">
-            ← Voltar para tarefas
-          </Anchor>
+          <Button
+            component={Link}
+            href={returnTo}
+            variant="default"
+            size="xs"
+            radius="xl"
+            leftSection="←"
+          >
+            Voltar para tarefas
+          </Button>
           <Title order={2}>{task.title}</Title>
           <Text c="dimmed" size="sm">
             {formatDate(task.created_at)}

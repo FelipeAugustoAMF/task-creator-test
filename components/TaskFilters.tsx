@@ -11,8 +11,10 @@ import {
   Stack,
   TextInput,
 } from "@mantine/core";
+import { DateInput } from "@mantine/dates";
 import React from "react";
 
+import { formatYmdDate, parseYmdDate } from "@/lib/dates/ymd";
 import {
   ALLOWED_TAG_OPTIONS,
   SCORING_CATEGORY_LABELS,
@@ -52,6 +54,9 @@ export function TaskFilters(props: {
   onApply: () => void;
   onClear: () => void;
 }) {
+  const fromDate = parseYmdDate(props.value.from);
+  const toDate = parseYmdDate(props.value.to);
+
   return (
     <Stack gap="md">
       <Grid>
@@ -124,19 +129,41 @@ export function TaskFilters(props: {
 
         <Grid.Col span={{ base: 12, md: 4 }}>
           <Group grow>
-            <TextInput
-              type="date"
+            <DateInput
               label="De"
-              value={props.value.from}
-              onChange={(e) =>
-                props.onChange({ ...props.value, from: e.currentTarget.value })
-              }
+              value={fromDate}
+              onChange={(date) => {
+                const nextFrom = formatYmdDate(date);
+                props.onChange({
+                  ...props.value,
+                  from: nextFrom,
+                  to:
+                    nextFrom && props.value.to.trim() && props.value.to < nextFrom
+                      ? nextFrom
+                      : props.value.to,
+                });
+              }}
+              valueFormat="DD/MM/YYYY"
+              maxDate={toDate ?? undefined}
+              clearable
             />
-            <TextInput
-              type="date"
+            <DateInput
               label="Até"
-              value={props.value.to}
-              onChange={(e) => props.onChange({ ...props.value, to: e.currentTarget.value })}
+              value={toDate}
+              onChange={(date) => {
+                const nextTo = formatYmdDate(date);
+                props.onChange({
+                  ...props.value,
+                  to: nextTo,
+                  from:
+                    nextTo && props.value.from.trim() && props.value.from > nextTo
+                      ? nextTo
+                      : props.value.from,
+                });
+              }}
+              valueFormat="DD/MM/YYYY"
+              minDate={fromDate ?? undefined}
+              clearable
             />
           </Group>
         </Grid.Col>
