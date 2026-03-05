@@ -56,6 +56,12 @@ export function LoginPageClient() {
         return;
       }
 
+      // Hard navigation avoids App Router cache issues with auth redirects.
+      if (typeof window !== "undefined") {
+        window.location.assign("/dashboard");
+        return;
+      }
+
       router.push("/dashboard");
       router.refresh();
     });

@@ -10,6 +10,7 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
@@ -85,7 +86,16 @@ export function TaskTable(props: {
   sortBy: TaskSortBy;
   sortDir: TaskSortDir;
   onSortChange: (by: TaskSortBy) => void;
+  onOpenTask?: (taskId: string) => void;
 }) {
+  const router = useRouter();
+
+  function taskDetailsHref(taskId: string) {
+    return props.returnTo
+      ? `/dashboard/tasks/${taskId}?returnTo=${encodeURIComponent(props.returnTo)}`
+      : `/dashboard/tasks/${taskId}`;
+  }
+
   return (
     <ScrollArea>
       <Table striped highlightOnHover>
@@ -135,7 +145,35 @@ export function TaskTable(props: {
             </Table.Tr>
           ) : (
             props.tasks.map((task) => (
-              <Table.Tr key={task.id}>
+              <Table.Tr
+                key={task.id}
+                onClick={(e) => {
+                  if (e.defaultPrevented) return;
+                  if (e.button !== 0) return;
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+                  const target = e.target;
+                  if (target instanceof Element) {
+                    if (target.closest("a,button,input,textarea,select,[role='button']")) {
+                      return;
+                    }
+                  }
+
+                  props.onOpenTask?.(task.id);
+                  router.push(taskDetailsHref(task.id));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                  e.preventDefault();
+                  props.onOpenTask?.(task.id);
+                  router.push(taskDetailsHref(task.id));
+                }}
+                tabIndex={0}
+                role="link"
+                aria-label={`Abrir detalhes: ${task.title}`}
+                style={{ cursor: "pointer" }}
+              >
                 <Table.Td>
                   {task.status !== "done" ? (
                     <Badge color="red" variant="light">
@@ -151,11 +189,13 @@ export function TaskTable(props: {
                   <Group gap="xs" wrap="nowrap">
                     <Anchor
                       component={Link}
-                      href={
-                        props.returnTo
-                          ? `/dashboard/tasks/${task.id}?returnTo=${encodeURIComponent(props.returnTo)}`
-                          : `/dashboard/tasks/${task.id}`
-                      }
+                      href={taskDetailsHref(task.id)}
+                      title="Abrir detalhes"
+                      onClick={(e) => {
+                        if (e.button !== 0) return;
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                        props.onOpenTask?.(task.id);
+                      }}
                     >
                       {task.title}
                     </Anchor>

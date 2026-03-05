@@ -4,9 +4,11 @@ import {
   ActionIcon,
   Badge,
   Button,
+  Box,
   Card,
   Collapse,
   Group,
+  LoadingOverlay,
   Pagination,
   Stack,
   Text,
@@ -42,6 +44,7 @@ export function DashboardPageClient(props: {
   const [sortDir, setSortDir] = useState<TaskSortDir>(props.initialSort.sortDir);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [taskOpening, setTaskOpening] = useState(false);
   const filtersCardRef = useRef<HTMLDivElement | null>(null);
   const todayDate = useMemo(() => {
     const now = new Date();
@@ -249,7 +252,15 @@ export function DashboardPageClient(props: {
   }
 
   return (
-    <Stack gap="md">
+    <Box pos="relative" mih="100vh">
+      <LoadingOverlay
+        visible={taskOpening}
+        zIndex={3000}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 2 }}
+        loaderProps={{ color: "indigo", size: "lg" }}
+      />
+
+      <Stack gap="md">
       <Group justify="space-between" align="flex-end">
         <Stack gap={2}>
           <Title order={2}>Tarefas</Title>
@@ -613,6 +624,10 @@ export function DashboardPageClient(props: {
         </Collapse>
       </Card>
 
+      <Text size="xs" c="dimmed">
+        Dica: clique em uma tarefa para abrir os detalhes (pode demorar alguns segundos).
+      </Text>
+
       <Card withBorder p={0}>
         <TaskTable
           tasks={props.items}
@@ -620,6 +635,7 @@ export function DashboardPageClient(props: {
           sortBy={sortBy}
           sortDir={sortDir}
           onSortChange={onSortChange}
+          onOpenTask={() => setTaskOpening(true)}
         />
       </Card>
 
@@ -639,6 +655,7 @@ export function DashboardPageClient(props: {
           router.refresh();
         }}
       />
-    </Stack>
+      </Stack>
+    </Box>
   );
 }

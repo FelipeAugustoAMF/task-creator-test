@@ -3,6 +3,7 @@
 import {
   AppShell,
   Burger,
+  Divider,
   Drawer,
   Container,
   Group,
@@ -47,8 +48,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     closeDrawer();
   }, [closeDrawer, pathname]);
 
-  const navLinks = (
-    <>
+  const mainNavLinks = (
+    <Stack gap="xs">
       <NavLink
         component={Link}
         href={tasksHref}
@@ -78,21 +79,23 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         active={pathname.startsWith("/dashboard/logs")}
         onClick={closeDrawer}
       />
+    </Stack>
+  );
 
-      <NavLink
-        component={Link}
-        href="/logout"
-        label="Sair"
-        leftSection={
-          <ThemeIcon variant="light" color="gray" radius="md" size={32}>
-            <Text fw={700} size="sm">
-              ←
-            </Text>
-          </ThemeIcon>
-        }
-        onClick={closeDrawer}
-      />
-    </>
+  const logoutNavLink = (
+    <NavLink
+      component={Link}
+      href="/logout"
+      label="Sair"
+      leftSection={
+        <ThemeIcon variant="light" color="gray" radius="md" size={32}>
+          <Text fw={700} size="sm">
+            ←
+          </Text>
+        </ThemeIcon>
+      }
+      onClick={closeDrawer}
+    />
   );
 
   return (
@@ -150,11 +153,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         returnFocus
         overlayProps={{ backgroundOpacity: 0.55, blur: 2 }}
       >
-        <Stack gap="xs">
-          {navLinks}
-          <Text size="xs" c="dimmed" mt="md">
-            MVP - Task Creator
-          </Text>
+        <Stack h="100%" justify="space-between" gap="xs">
+          {mainNavLinks}
+
+          <Stack gap="xs">
+            <Divider my="xs" />
+            {logoutNavLink}
+            <Text size="xs" c="dimmed">
+              MVP - Task Creator
+            </Text>
+          </Stack>
         </Stack>
       </Drawer>
 
@@ -166,13 +174,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </AppShell.Section>
 
         <AppShell.Section component={ScrollArea} grow>
-          {navLinks}
+          {mainNavLinks}
         </AppShell.Section>
 
         <AppShell.Section>
-          <Text size="xs" c="dimmed">
-            MVP - Task Creator
-          </Text>
+          <Stack gap="xs">
+            <Divider />
+            {logoutNavLink}
+            <Text size="xs" c="dimmed">
+              MVP - Task Creator
+            </Text>
+          </Stack>
         </AppShell.Section>
       </AppShell.Navbar>
 
