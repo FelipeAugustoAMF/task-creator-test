@@ -3,6 +3,7 @@
 import {
   Anchor,
   Badge,
+  Button,
   Card,
   Group,
   Stack,
@@ -12,7 +13,7 @@ import {
 } from "@mantine/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import { PromptRunViewer } from "@/components/PromptRunViewer";
 import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
@@ -51,11 +52,57 @@ function formatTag(value: string) {
   return (ALLOWED_TAG_LABELS as Record<string, string>)[value] || value;
 }
 
-export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }) {
+export function TaskDetailClient(props: { task: TaskRow }) {
   const { task } = props;
   const searchParams = useSearchParams();
   const returnToRaw = searchParams.get("returnTo");
   const returnTo = returnToRaw && returnToRaw.startsWith("/dashboard") ? returnToRaw : "/dashboard";
+  const [tab, setTab] = useState<string | null>("details");
+  const [runs, setRuns] = useState<ScoringRunRow[] | null>(null);
+  const [runsLoading, setRunsLoading] = useState(false);
+  const [runsError, setRunsError] = useState<string | null>(null);
+
+  function retryRuns() {
+    setRuns(null);
+    setRunsError(null);
+    setRunsLoading(false);
+  }
+
+  useEffect(() => {
+    setTab("details");
+    setRuns(null);
+    setRunsError(null);
+    setRunsLoading(false);
+  }, [task.id]);
+
+  useEffect(() => {
+    if (tab !== "logs") return;
+    if (runs != null || runsLoading || runsError) return;
+
+    setRunsLoading(true);
+    setRunsError(null);
+
+    fetch(`/api/dashboard/tasks/${task.id}/runs`, { cache: "no-store" })
+      .then(async (res) => {
+        if (res.ok) return res.json();
+        const body = await res.json().catch(() => null);
+        const message =
+          body && typeof body === "object" && typeof body.message === "string"
+            ? body.message
+            : `Falha ao carregar logs (${res.status})`;
+        throw new Error(message);
+      })
+      .then((body) => {
+        const nextRuns = body && typeof body === "object" ? (body as any).runs : null;
+        setRuns(Array.isArray(nextRuns) ? nextRuns : []);
+      })
+      .catch((error) => {
+        setRunsError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => {
+        setRunsLoading(false);
+      });
+  }, [runs, runsLoading, runsError, tab, task.id]);
 
   return (
     <Stack gap="md">
@@ -85,7 +132,7 @@ export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }
         </Group>
       </Group>
 
-      <Tabs defaultValue="details">
+      <Tabs value={tab} onChange={setTab} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="details">Detalhes</Tabs.Tab>
           <Tabs.Tab value="logs">Logs de prompt</Tabs.Tab>
@@ -131,7 +178,28 @@ export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }
         </Tabs.Panel>
 
         <Tabs.Panel value="logs" pt="md">
-          <PromptRunViewer runs={props.runs} />
+          {runsLoading ? (
+            <Card withBorder>
+              <Text c="dimmed" size="sm">
+                Carregando logs...
+              </Text>
+            </Card>
+          ) : runsError ? (
+            <Card withBorder>
+              <Stack gap="xs">
+                <Text c="red" size="sm">
+                  {runsError}
+                </Text>
+                <Group justify="flex-end">
+                  <Button size="xs" variant="default" onClick={retryRuns}>
+                    Tentar novamente
+                  </Button>
+                </Group>
+              </Stack>
+            </Card>
+          ) : runs ? (
+            <PromptRunViewer runs={runs} />
+          ) : null}
         </Tabs.Panel>
       </Tabs>
     </Stack>

@@ -43,6 +43,15 @@ export function DashboardPageClient(props: {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const filtersCardRef = useRef<HTMLDivElement | null>(null);
+  const todayDate = useMemo(() => {
+    const now = new Date();
+    const yyyy = String(now.getFullYear());
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+  const todayOnlyApplied =
+    props.initialFilters.from?.trim() === todayDate && props.initialFilters.to?.trim() === todayDate;
 
   useEffect(() => {
     if (!filtersOpen) return;
@@ -187,6 +196,23 @@ export function DashboardPageClient(props: {
     pushDashboard(buildSearchParams({ page: 1 }));
   }
 
+  function toggleTodayOnly() {
+    const applied = props.initialFilters;
+    const nextApplied: TaskFiltersValue = todayOnlyApplied
+      ? { ...applied, from: "", to: "" }
+      : { ...applied, from: todayDate, to: todayDate };
+
+    setFilters(nextApplied);
+    pushDashboard(
+      buildSearchParamsFrom({
+        filters: nextApplied,
+        page: 1,
+        sortBy,
+        sortDir,
+      }),
+    );
+  }
+
   function clearFilters() {
     setFilters({
       search: "",
@@ -234,20 +260,34 @@ export function DashboardPageClient(props: {
       <Card
         withBorder
         ref={filtersCardRef}
-        onClick={() => {
-          if (!filtersOpen) setFiltersOpen(true);
-        }}
-        style={{ cursor: filtersOpen ? "default" : "pointer" }}
       >
-        <Group justify="space-between" align="center">
+        <Group
+          justify="space-between"
+          align="center"
+          onClick={() => setFiltersOpen((v) => !v)}
+          style={{ cursor: "pointer" }}
+        >
           <Text fw={600}>Filtros</Text>
-          <ActionIcon
-            variant="subtle"
-            aria-label={filtersOpen ? "Recolher filtros" : "Expandir filtros"}
-            onClick={() => setFiltersOpen((v) => !v)}
-          >
-            {filtersOpen ? "▲" : "▼"}
-          </ActionIcon>
+          <Group gap="xs">
+            <Button
+              size="xs"
+              variant={todayOnlyApplied ? "filled" : "default"}
+              radius="xl"
+              aria-pressed={todayOnlyApplied}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleTodayOnly();
+              }}
+            >
+              Tarefas de Hoje
+            </Button>
+            <ActionIcon
+              variant="subtle"
+              aria-label={filtersOpen ? "Recolher filtros" : "Expandir filtros"}
+            >
+              {filtersOpen ? "▲" : "▼"}
+            </ActionIcon>
+          </Group>
         </Group>
 
         <Group gap={8} mt="sm" wrap="wrap">

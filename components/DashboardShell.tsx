@@ -4,6 +4,7 @@ import {
   ActionIcon,
   AppShell,
   Burger,
+  Drawer,
   Container,
   Group,
   NavLink,
@@ -13,10 +14,10 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import { useDisclosure, useLocalStorage } from "@mantine/hooks";
+import { useDisclosure, useLocalStorage, useMediaQuery } from "@mantine/hooks";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import React from "react";
+import React, { useEffect } from "react";
 
 function coerceReturnTo(value: string | null): string | null {
   if (!value) return null;
@@ -32,6 +33,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     key: "tha_nav_desktop_open",
     defaultValue: true,
   });
+  const isMobile = useMediaQuery("(max-width: 991px)");
 
   const currentQuery = searchParams.toString();
   const currentUrl = currentQuery ? `${pathname}?${currentQuery}` : pathname;
@@ -46,25 +48,74 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     return qs ? `/dashboard/logs?${qs}` : "/dashboard/logs";
   })();
 
+  useEffect(() => {
+    closeMobile();
+  }, [closeMobile, pathname]);
+
+  const burgerOpened = isMobile ? mobileOpened : desktopOpened;
+
+  const navLinks = (
+    <>
+      <NavLink
+        component={Link}
+        href={tasksHref}
+        label="Tarefas"
+        leftSection={
+          <ThemeIcon variant="light" color="indigo" radius="md" size={32}>
+            <Text fw={700} size="sm">
+              T
+            </Text>
+          </ThemeIcon>
+        }
+        active={pathname === "/dashboard" || pathname.startsWith("/dashboard/tasks")}
+        onClick={closeMobile}
+      />
+
+      <NavLink
+        component={Link}
+        href={logsHref}
+        label="Logs"
+        leftSection={
+          <ThemeIcon variant="light" color="indigo" radius="md" size={32}>
+            <Text fw={700} size="sm">
+              L
+            </Text>
+          </ThemeIcon>
+        }
+        active={pathname.startsWith("/dashboard/logs")}
+        onClick={closeMobile}
+      />
+    </>
+  );
+
   return (
     <AppShell
       header={{ height: 56 }}
       navbar={{
         width: 260,
-        breakpoint: "sm",
-        collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
+        breakpoint: "md",
+        // Mantine AppShell navbar sometimes fails to slide-in on mobile depending on layout;
+        // use Drawer for mobile and keep AppShell.Navbar for desktop.
+        collapsed: { mobile: true, desktop: !desktopOpened },
       }}
       padding="md"
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group gap="sm">
-            <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
             <Burger
-              opened={desktopOpened}
-              onClick={() => setDesktopOpened((v) => !v)}
-              visibleFrom="sm"
+              opened={burgerOpened}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isMobile) {
+                  toggleMobile();
+                } else {
+                  setDesktopOpened((v) => !v);
+                }
+              }}
               size="sm"
+              type="button"
+              aria-label={burgerOpened ? "Fechar menu" : "Abrir menu"}
             />
             <Stack gap={0}>
               <Title order={3}>The Hybrid Architect</Title>
@@ -76,6 +127,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </Group>
       </AppShell.Header>
 
+      <Drawer
+        opened={mobileOpened}
+        onClose={closeMobile}
+        title="Navegação"
+        padding="md"
+        size={260}
+        hiddenFrom="md"
+        withinPortal
+        keepMounted={false}
+        zIndex={1000}
+        overlayProps={{ backgroundOpacity: 0.55, blur: 2 }}
+      >
+        <Stack gap="xs">
+          {navLinks}
+          <Text size="xs" c="dimmed" mt="md">
+            MVP - Task Creator
+          </Text>
+        </Stack>
+      </Drawer>
+
       <AppShell.Navbar p="md">
         <AppShell.Section mb="sm">
           <Group justify="space-between">
@@ -86,7 +157,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               variant="subtle"
               aria-label={desktopOpened ? "Recolher menu" : "Expandir menu"}
               onClick={() => setDesktopOpened((v) => !v)}
-              visibleFrom="sm"
+              visibleFrom="md"
             >
               {desktopOpened ? "«" : "»"}
             </ActionIcon>
@@ -94,40 +165,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </AppShell.Section>
 
         <AppShell.Section component={ScrollArea} grow>
-          <NavLink
-            component={Link}
-            href={tasksHref}
-            label="Tarefas"
-            leftSection={
-              <ThemeIcon variant="light" color="indigo" radius="md" size={32}>
-                <Text fw={700} size="sm">
-                  T
-                </Text>
-              </ThemeIcon>
-            }
-            active={pathname === "/dashboard" || pathname.startsWith("/dashboard/tasks")}
-            onClick={closeMobile}
-          />
-
-          <NavLink
-            component={Link}
-            href={logsHref}
-            label="Logs"
-            leftSection={
-              <ThemeIcon variant="light" color="indigo" radius="md" size={32}>
-                <Text fw={700} size="sm">
-                  L
-                </Text>
-              </ThemeIcon>
-            }
-            active={pathname.startsWith("/dashboard/logs")}
-            onClick={closeMobile}
-          />
+          {navLinks}
         </AppShell.Section>
 
         <AppShell.Section>
           <Text size="xs" c="dimmed">
-            MVP • Next.js + Mantine + Supabase + OpenAI
+            MVP - Task Creator
           </Text>
         </AppShell.Section>
       </AppShell.Navbar>
