@@ -78,6 +78,20 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         active={pathname.startsWith("/dashboard/logs")}
         onClick={closeDrawer}
       />
+
+      <NavLink
+        component={Link}
+        href="/logout"
+        label="Sair"
+        leftSection={
+          <ThemeIcon variant="light" color="gray" radius="md" size={32}>
+            <Text fw={700} size="sm">
+              ←
+            </Text>
+          </ThemeIcon>
+        }
+        onClick={closeDrawer}
+      />
     </>
   );
 

@@ -20,7 +20,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState, useTransition } from "react";
 
 import { PromptRunViewer } from "@/components/PromptRunViewer";
-import { deleteTaskAction, updateTaskAction } from "@/app/dashboard/actions";
+import {
+  deleteTaskAction,
+  setTaskCompletedAction,
+  updateTaskAction,
+} from "@/app/dashboard/actions";
 import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
 import { ScoringRunRow, TaskRow } from "@/lib/tasks/types";
 
@@ -37,7 +41,7 @@ const legacyCategoryMap: Record<string, string> = {
 };
 
 const statusLabelMap: Record<string, string> = {
-  done: "concluída",
+  done: "pontuada",
   failed: "falhou",
 };
 
@@ -121,6 +125,28 @@ export function TaskDetailClient(props: { task: TaskRow }) {
     });
   }
 
+  function toggleCompleted() {
+    startTransition(async () => {
+      const nextCompleted = !task.is_completed;
+      const result = await setTaskCompletedAction({ id: task.id, isCompleted: nextCompleted });
+      if (!result.ok) {
+        notifications.show({
+          color: "red",
+          title: "Falha ao atualizar status",
+          message: result.message,
+        });
+        return;
+      }
+
+      notifications.show({
+        color: "green",
+        title: nextCompleted ? "Tarefa concluída" : "Tarefa pendente",
+        message: nextCompleted ? "Marcada como concluída." : "Marcada como pendente.",
+      });
+      router.refresh();
+    });
+  }
+
   function retryRuns() {
     setRuns(null);
     setRunsError(null);
@@ -190,6 +216,15 @@ export function TaskDetailClient(props: { task: TaskRow }) {
 
         <Stack gap="xs" align="flex-end">
           <Group gap="xs">
+            <Button
+              size="xs"
+              color={task.is_completed ? "gray" : "green"}
+              variant={task.is_completed ? "default" : "light"}
+              onClick={toggleCompleted}
+              loading={isPending}
+            >
+              {task.is_completed ? "Marcar como pendente" : "Marcar como concluída"}
+            </Button>
             <Button size="xs" variant="default" onClick={openEdit}>
               Editar
             </Button>
@@ -199,6 +234,9 @@ export function TaskDetailClient(props: { task: TaskRow }) {
           </Group>
 
           <Group gap="xs">
+            <Badge color={task.is_completed ? "green" : "yellow"} variant="light">
+              {task.is_completed ? "concluída" : "pendente"}
+            </Badge>
             <Badge color={task.status === "done" ? "indigo" : "red"} variant="light">
               {statusLabelMap[task.status] || task.status}
             </Badge>

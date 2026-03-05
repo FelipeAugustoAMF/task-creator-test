@@ -138,6 +138,7 @@ export function DashboardPageClient(props: {
     const f = params.filters;
 
     if (f.search?.trim()) sp.set("search", f.search.trim());
+    if (f.completion?.trim()) sp.set("completion", f.completion.trim());
     if (f.category?.trim()) sp.set("category", f.category.trim());
     if (f.tags?.length) sp.set("tags", f.tags.join(","));
     if (typeof f.scoreMin === "number") sp.set("scoreMin", String(f.scoreMin));
@@ -218,6 +219,7 @@ export function DashboardPageClient(props: {
   function clearFilters() {
     setFilters({
       search: "",
+      completion: "",
       category: "",
       scoreMin: undefined,
       scoreMax: undefined,
@@ -327,6 +329,43 @@ export function DashboardPageClient(props: {
                   styles={chipStyles}
                 >
                   Título: {search}
+                </Badge>,
+              );
+            }
+
+            const completion = applied.completion?.trim();
+            if (completion) {
+              const completionLabel =
+                completion === "pending"
+                  ? "Pendentes"
+                  : completion === "completed"
+                    ? "Concluídas"
+                    : completion;
+              const nextApplied: TaskFiltersValue = { ...applied, completion: "" };
+              chips.push(
+                <Badge
+                  key="completion"
+                  variant="light"
+                  color="gray"
+                  rightSection={
+                    chipRemoveButton({
+                      ariaLabel: "Remover filtro: Status",
+                      onRemove: () => {
+                        setFilters(nextApplied);
+                        pushDashboard(
+                          buildSearchParamsFrom({
+                            filters: nextApplied,
+                            page: 1,
+                            sortBy: appliedSort.sortBy,
+                            sortDir: appliedSort.sortDir,
+                          }),
+                        );
+                      },
+                    })
+                  }
+                  styles={chipStyles}
+                >
+                  Status: {completionLabel}
                 </Badge>,
               );
             }

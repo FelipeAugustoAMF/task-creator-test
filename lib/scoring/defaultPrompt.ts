@@ -1,7 +1,7 @@
 import "server-only";
 
 export const DEFAULT_PROMPT_NAME = "default";
-export const DEFAULT_PROMPT_VERSION = 3;
+export const DEFAULT_PROMPT_VERSION = 1;
 
 export const DEFAULT_PROMPT_TEMPLATE = `Você é "The Hybrid Architect", uma IA que prioriza tarefas (pessoais ou profissionais) com base em impacto, urgência, esforço e risco.
 

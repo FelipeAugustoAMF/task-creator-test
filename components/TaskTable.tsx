@@ -148,16 +148,25 @@ export function TaskTable(props: {
                   )}
                 </Table.Td>
                 <Table.Td>
-                  <Anchor
-                    component={Link}
-                    href={
-                      props.returnTo
-                        ? `/dashboard/tasks/${task.id}?returnTo=${encodeURIComponent(props.returnTo)}`
-                        : `/dashboard/tasks/${task.id}`
-                    }
-                  >
-                    {task.title}
-                  </Anchor>
+                  <Group gap="xs" wrap="nowrap">
+                    <Anchor
+                      component={Link}
+                      href={
+                        props.returnTo
+                          ? `/dashboard/tasks/${task.id}?returnTo=${encodeURIComponent(props.returnTo)}`
+                          : `/dashboard/tasks/${task.id}`
+                      }
+                    >
+                      {task.title}
+                    </Anchor>
+                    <Badge
+                      size="xs"
+                      color={task.is_completed ? "green" : "yellow"}
+                      variant="light"
+                    >
+                      {task.is_completed ? "concluída" : "pendente"}
+                    </Badge>
+                  </Group>
                 </Table.Td>
                 <Table.Td>
                   {task.category ? (

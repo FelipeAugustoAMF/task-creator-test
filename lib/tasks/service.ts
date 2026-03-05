@@ -78,6 +78,7 @@ export async function createTaskAndScore(input: CreateTaskInput): Promise<Create
       description: input.description,
       status: "failed",
       tags: [],
+      is_completed: false,
     })
     .select("*")
     .single();
@@ -176,6 +177,7 @@ export async function createTaskAndScore(input: CreateTaskInput): Promise<Create
 export type ListTasksParams = {
   page: number;
   pageSize: number;
+  completed?: boolean;
   scoreMin?: number;
   scoreMax?: number;
   category?: string;
@@ -228,6 +230,10 @@ export async function listTasks(params: ListTasksParams): Promise<{
 
   if (params.category) {
     query = query.eq("category", params.category);
+  }
+
+  if (typeof params.completed === "boolean") {
+    query = query.eq("is_completed", params.completed);
   }
 
   if (typeof params.scoreMin === "number" && Number.isFinite(params.scoreMin)) {
@@ -299,6 +305,22 @@ export async function updateTask(input: UpdateTaskInput): Promise<TaskRow | null
     .from("tasks")
     .update({ title: input.title, description: input.description })
     .eq("id", input.id)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return (data as TaskRow | null) ?? null;
+}
+
+export async function setTaskCompleted(params: {
+  id: string;
+  isCompleted: boolean;
+}): Promise<TaskRow | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ is_completed: params.isCompleted })
+    .eq("id", params.id)
     .select("*")
     .maybeSingle();
 

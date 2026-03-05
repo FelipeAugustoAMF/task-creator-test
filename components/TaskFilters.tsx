@@ -24,6 +24,7 @@ import { DEFAULT_TASK_PAGE_SIZE } from "@/lib/tasks/query";
 
 export type TaskFiltersValue = {
   search: string;
+  completion: "" | "pending" | "completed";
   category: string;
   scoreMin?: number;
   scoreMax?: number;
@@ -39,6 +40,12 @@ const categoryOptions = [
     value,
     label: SCORING_CATEGORY_LABELS[value],
   })),
+];
+
+const completionOptions = [
+  { value: "", label: "Todas" },
+  { value: "pending", label: "Pendentes" },
+  { value: "completed", label: "Concluídas" },
 ];
 
 const pageSizeOptions = [
@@ -71,6 +78,22 @@ export function TaskFilters(props: {
 
         <Grid.Col span={{ base: 12, md: 3 }}>
           <Select
+            label="Status"
+            placeholder="Todas"
+            data={completionOptions}
+            value={props.value.completion}
+            onChange={(value) =>
+              props.onChange({
+                ...props.value,
+                completion: (value as TaskFiltersValue["completion"]) || "",
+              })
+            }
+            allowDeselect={false}
+          />
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12, md: 3 }}>
+          <Select
             label="Categoria"
             data={categoryOptions}
             value={props.value.category}
@@ -80,7 +103,7 @@ export function TaskFilters(props: {
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 3 }}>
+        <Grid.Col span={{ base: 12 }}>
           <MultiSelect
             label="Tags"
             placeholder="Selecione…"

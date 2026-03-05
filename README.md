@@ -8,10 +8,11 @@ Este é apenas um pequeno MVP de teste feito com Next.js (App Router) + TypeScri
 - Chama a **OpenAI** para gerar prioridade:
   - `score` (1..10), `category`, `tags`, `rationale`, `confidence` (0..1)
 - Persiste tudo no Supabase (tabelas `tasks`, `prompts`, `scoring_runs`).
-- Dashboard em `/dashboard`:
-  - lista + filtros básicos
-  - criação de nova task (síncrona)
+- Dashboard em `/dashboard` (login em `/login`):
+  - lista + filtros (inclui status: pendentes/concluídas)
+  - criação de nova task (síncrona) com escolha de modelo OpenAI
   - detalhe da task + aba com logs de prompt/response
+  - editar/excluir tasks; marcar como concluída/pendente
 
 ## 1) Setup local
 
@@ -20,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Abra `http://localhost:3000/dashboard`.
+Abra `http://localhost:3000/login` (ou `http://localhost:3000/dashboard`, que redireciona para login).
 
 ## 2) Variáveis de ambiente
 
@@ -33,20 +34,30 @@ SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 OPENAI_API_KEY="sk-..."
 OPENAI_MODEL="gpt-4.1-mini"
 
+APP_SESSION_SECRET="change-me"
 APP_API_KEY="change-me"
 ```
 
 Regras importantes:
 
-- **Nunca** exponha `SUPABASE_SERVICE_ROLE_KEY` ou `APP_API_KEY` no client.
+- **Nunca** exponha `SUPABASE_SERVICE_ROLE_KEY`, `APP_API_KEY` ou `APP_SESSION_SECRET` no client.
 - Endpoints `/api/*` deste MVP exigem `Authorization: Bearer <APP_API_KEY>`.
+- O dashboard usa cookie de sessão assinado via `APP_SESSION_SECRET`.
 
 ## 3) Aplicar o schema no Supabase
 
 1. Crie um projeto no Supabase.
 2. Vá em **SQL Editor** e rode o arquivo `supabase/schema.sql`.
 
-Esse script cria as tabelas e faz seed de um prompt `default` (version 3).
+Esse script cria as tabelas, faz seed de um prompt `default` (version 1) e cria um usuário padrão para login (`admin/admin`).
+
+### 3.1) (Opcional) Criar outro usuário de login
+
+```sql
+insert into public.app_users (username, password_hash)
+values ('teste', crypt('teste', gen_salt('bf')))
+on conflict (username) do nothing;
+```
 
 ## 4) Testar endpoints (curl)
 
@@ -85,6 +96,8 @@ curl "http://localhost:3000/api/tasks?page=1&pageSize=20&from=2026-03-01&to=2026
   -H "Authorization: Bearer $APP_API_KEY"
 ```
 
+Filtro de status: `completion=pending|completed`.
+
 Ordenação: `sortBy=created_at|score|title` e `sortDir=asc|desc` (padrão: `created_at desc`).
 
 ### 4.3) GET /api/tasks/:id
@@ -105,6 +118,24 @@ curl "http://localhost:3000/api/tasks/<TASK_ID>/runs" \
 
 ```bash
 curl "http://localhost:3000/api/prompts" \
+  -H "Authorization: Bearer $APP_API_KEY"
+```
+
+### 4.6) PATCH /api/tasks/:id (editar)
+
+Atualiza parcialmente `title`, `description` e/ou `isCompleted`.
+
+```bash
+curl -X PATCH "http://localhost:3000/api/tasks/<TASK_ID>" \
+  -H "Authorization: Bearer $APP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Novo título","isCompleted":true}'
+```
+
+### 4.7) DELETE /api/tasks/:id (excluir)
+
+```bash
+curl -X DELETE "http://localhost:3000/api/tasks/<TASK_ID>" \
   -H "Authorization: Bearer $APP_API_KEY"
 ```
 

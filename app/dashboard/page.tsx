@@ -28,6 +28,14 @@ export default async function DashboardPage(props: {
   const scoreMax =
     typeof sp.scoreMax === "string" ? Number(sp.scoreMax) : undefined;
 
+  const completion =
+    typeof sp.completion === "string" &&
+    (sp.completion === "pending" || sp.completion === "completed")
+      ? sp.completion
+      : undefined;
+  const completed =
+    completion === "completed" ? true : completion === "pending" ? false : undefined;
+
   const category = typeof sp.category === "string" ? sp.category : undefined;
   const search = typeof sp.search === "string" ? sp.search : undefined;
   const from = typeof sp.from === "string" ? sp.from : undefined;
@@ -58,6 +66,7 @@ export default async function DashboardPage(props: {
   const { items, total } = await listTasks({
     page,
     pageSize,
+    completed,
     scoreMin: Number.isFinite(scoreMin as number) ? (scoreMin as number) : undefined,
     scoreMax: Number.isFinite(scoreMax as number) ? (scoreMax as number) : undefined,
     category,
@@ -81,6 +90,7 @@ export default async function DashboardPage(props: {
       }}
       initialFilters={{
         search: search || "",
+        completion: completion || "",
         category: category || "",
         scoreMin: Number.isFinite(scoreMin as number) ? (scoreMin as number) : undefined,
         scoreMax: Number.isFinite(scoreMax as number) ? (scoreMax as number) : undefined,

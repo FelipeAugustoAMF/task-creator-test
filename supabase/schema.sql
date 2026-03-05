@@ -8,6 +8,7 @@ create table if not exists public.tasks (
   title text not null,
   description text not null,
   status text not null,
+  is_completed boolean not null default false,
   score smallint null,
   category text null,
   tags text[] not null default '{}'::text[],
@@ -18,6 +19,9 @@ create table if not exists public.tasks (
   constraint tasks_score_check check (score is null or (score >= 1 and score <= 10)),
   constraint tasks_confidence_check check (confidence is null or (confidence >= 0 and confidence <= 1))
 );
+
+alter table if exists public.tasks
+  add column if not exists is_completed boolean not null default false;
 
 create index if not exists tasks_created_at_desc_idx on public.tasks (created_at desc);
 
@@ -46,11 +50,11 @@ create table if not exists public.scoring_runs (
 
 create index if not exists scoring_runs_task_id_idx on public.scoring_runs (task_id);
 
--- Seed a default prompt template (simple "versioning" via prompts.version) - default v3
+-- Seed a default prompt template (simple "versioning" via prompts.version) - default v1
 insert into public.prompts (name, version, template)
 select
   'default',
-  3,
+  1,
   $prompt$
 Você é "The Hybrid Architect", uma IA que prioriza tarefas (pessoais ou profissionais) com base em impacto, urgência, esforço e risco.
 
@@ -96,5 +100,36 @@ Regras:
 - Mesmo que a tarefa esteja em outro idioma, gere tags e rationale em português brasileiro.
 $prompt$
 where not exists (
-  select 1 from public.prompts where name = 'default' and version = 3
+  select 1 from public.prompts where name = 'default' and version = 1
 );
+
+-- App users (login simples)
+create table if not exists public.app_users (
+  id uuid primary key default gen_random_uuid(),
+  username text not null unique,
+  password_hash text not null,
+  created_at timestamptz not null default now()
+);
+
+create or replace function public.authenticate_app_user(p_username text, p_password text)
+returns uuid
+language sql
+security definer
+as $$
+  select id
+  from public.app_users
+  where username = p_username
+    and password_hash = crypt(p_password, password_hash)
+  limit 1
+$$;
+
+-- Ensure the function is callable via Supabase (PostgREST) when using the service role key.
+grant usage on schema public to service_role;
+grant execute on function public.authenticate_app_user(text, text) to service_role;
+
+insert into public.app_users (username, password_hash)
+values ('admin', crypt('admin', gen_salt('bf')))
+on conflict (username) do nothing;
+
+-- Refresh Supabase schema cache (helps if RPC isn't found right after creating functions)
+notify pgrst, 'reload schema';

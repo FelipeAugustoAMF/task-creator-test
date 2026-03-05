@@ -68,6 +68,10 @@ export async function GET(request: Request) {
     const scoreMin = scoreMinRaw != null ? Number(scoreMinRaw) : undefined;
     const scoreMax = scoreMaxRaw != null ? Number(scoreMaxRaw) : undefined;
 
+    const completion = searchParams.get("completion") || undefined;
+    const completed =
+      completion === "completed" ? true : completion === "pending" ? false : undefined;
+
     const category = searchParams.get("category") || undefined;
     const search = searchParams.get("search") || undefined;
     const from = searchParams.get("from") || undefined;
@@ -88,6 +92,7 @@ export async function GET(request: Request) {
     const { items, total } = await listTasks({
       page,
       pageSize,
+      completed,
       scoreMin: Number.isFinite(scoreMin as number) ? (scoreMin as number) : undefined,
       scoreMax: Number.isFinite(scoreMax as number) ? (scoreMax as number) : undefined,
       category,

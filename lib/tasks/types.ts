@@ -5,6 +5,7 @@ export type TaskRow = {
   title: string;
   description: string;
   status: TaskStatus;
+  is_completed: boolean;
   score: number | null;
   category: string | null;
   tags: string[];
