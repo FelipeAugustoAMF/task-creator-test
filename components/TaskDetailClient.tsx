@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Group,
+  Loader,
   Modal,
   Stack,
   Tabs,
@@ -297,9 +298,12 @@ export function TaskDetailClient(props: { task: TaskRow }) {
         <Tabs.Panel value="logs" pt="md">
           {runsLoading ? (
             <Card withBorder>
-              <Text c="dimmed" size="sm">
-                Carregando logs...
-              </Text>
+              <Group gap="xs">
+                <Loader size="sm" />
+                <Text c="dimmed" size="sm">
+                  Carregando logs…
+                </Text>
+              </Group>
             </Card>
           ) : runsError ? (
             <Card withBorder>

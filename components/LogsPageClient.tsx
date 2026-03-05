@@ -5,10 +5,12 @@ import {
   Anchor,
   Badge,
   Button,
+  Box,
   Card,
   Collapse,
   Grid,
   Group,
+  LoadingOverlay,
   Modal,
   Pagination,
   ScrollArea,
@@ -22,7 +24,7 @@ import {
 import { DateInput } from "@mantine/dates";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useTransition } from "react";
 
 import { formatYmdDate, parseYmdDate } from "@/lib/dates/ymd";
 import { OPENAI_LIGHT_MODEL_OPTIONS } from "@/lib/openai/models";
@@ -65,6 +67,7 @@ export function LogsPageClient(props: {
   const [filters, setFilters] = useState<LogsFiltersValue>(props.initialFilters);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<ScoringRunWithTaskRow | null>(null);
+  const [isPending, startTransition] = useTransition();
   const fromDate = useMemo(() => parseYmdDate(filters.from), [filters.from]);
   const toDate = useMemo(() => parseYmdDate(filters.to), [filters.to]);
 
@@ -87,20 +90,32 @@ export function LogsPageClient(props: {
   }
 
   function applyFilters() {
-    router.push(`/dashboard/logs?${buildSearchParams({ page: 1 }).toString()}`);
+    startTransition(() => {
+      router.push(`/dashboard/logs?${buildSearchParams({ page: 1 }).toString()}`);
+    });
   }
 
   function clearFilters() {
     setFilters({ from: "", to: "", model: "" });
-    if (returnTo) {
-      router.push(`/dashboard/logs?${new URLSearchParams({ returnTo }).toString()}`);
-    } else {
-      router.push("/dashboard/logs");
-    }
+    startTransition(() => {
+      if (returnTo) {
+        router.push(`/dashboard/logs?${new URLSearchParams({ returnTo }).toString()}`);
+      } else {
+        router.push("/dashboard/logs");
+      }
+    });
   }
 
   return (
-    <Stack gap="md">
+    <Box pos="relative" mih="100vh">
+      <LoadingOverlay
+        visible={isPending}
+        zIndex={3000}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 2 }}
+        loaderProps={{ color: "indigo", size: "lg" }}
+      />
+
+      <Stack gap="md">
       <Group justify="space-between" align="flex-end">
         <Stack gap={2}>
           <Title order={2}>Logs</Title>
@@ -309,7 +324,9 @@ export function LogsPageClient(props: {
           value={props.page}
           total={totalPages}
           onChange={(p) =>
-            router.push(`/dashboard/logs?${buildSearchParams({ page: p }).toString()}`)
+            startTransition(() => {
+              router.push(`/dashboard/logs?${buildSearchParams({ page: p }).toString()}`);
+            })
           }
         />
       </Group>
@@ -368,6 +385,7 @@ export function LogsPageClient(props: {
           </Stack>
         )}
       </Modal>
-    </Stack>
+      </Stack>
+    </Box>
   );
 }

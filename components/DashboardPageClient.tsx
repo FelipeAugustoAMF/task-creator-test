@@ -15,7 +15,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { TaskFormModal } from "@/components/TaskFormModal";
 import { TaskFilters, TaskFiltersValue } from "@/components/TaskFilters";
@@ -45,7 +45,6 @@ export function DashboardPageClient(props: {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [taskOpening, setTaskOpening] = useState(false);
-  const filtersCardRef = useRef<HTMLDivElement | null>(null);
   const todayDate = useMemo(() => {
     const now = new Date();
     const yyyy = String(now.getFullYear());
@@ -55,42 +54,6 @@ export function DashboardPageClient(props: {
   }, []);
   const todayOnlyApplied =
     props.initialFilters.from?.trim() === todayDate && props.initialFilters.to?.trim() === todayDate;
-
-  useEffect(() => {
-    if (!filtersOpen) return;
-
-      function onMouseDown(event: MouseEvent) {
-        const target = event.target;
-        if (!(target instanceof Element)) return;
-
-        if (filtersCardRef.current?.contains(target)) return;
-
-        // Select/MultiSelect dropdown (portal) - keep filtros abertos durante interação
-        if (target.closest?.("[data-composed]")) return;
-        if (target.closest?.("[data-portal]")) return;
-
-        setFiltersOpen(false);
-      }
-
-      function onTouchStart(event: TouchEvent) {
-        const target = event.target;
-        if (!(target instanceof Element)) return;
-
-        if (filtersCardRef.current?.contains(target)) return;
-        if (target.closest?.("[data-composed]")) return;
-        if (target.closest?.("[data-portal]")) return;
-
-        setFiltersOpen(false);
-      }
-
-    document.addEventListener("mousedown", onMouseDown);
-    document.addEventListener("touchstart", onTouchStart);
-
-    return () => {
-      document.removeEventListener("mousedown", onMouseDown);
-      document.removeEventListener("touchstart", onTouchStart);
-    };
-  }, [filtersOpen]);
 
   useEffect(() => {
     setFilters(props.initialFilters);
@@ -276,7 +239,6 @@ export function DashboardPageClient(props: {
 
       <Card
         withBorder
-        ref={filtersCardRef}
       >
         <Group
           justify="space-between"
