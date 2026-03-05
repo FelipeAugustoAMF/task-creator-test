@@ -12,15 +12,15 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { useClickOutside } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { TaskFormModal } from "@/components/TaskFormModal";
 import { TaskFilters, TaskFiltersValue } from "@/components/TaskFilters";
 import { TaskTable } from "@/components/TaskTable";
 import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
 import {
+  DEFAULT_TASK_PAGE_SIZE,
   DEFAULT_TASK_SORT_BY,
   DEFAULT_TASK_SORT_DIR,
   TaskSortBy,
@@ -40,9 +40,43 @@ export function DashboardPageClient(props: {
   const [filters, setFilters] = useState<TaskFiltersValue>(props.initialFilters);
   const [sortBy, setSortBy] = useState<TaskSortBy>(props.initialSort.sortBy);
   const [sortDir, setSortDir] = useState<TaskSortDir>(props.initialSort.sortDir);
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const filtersCardRef = useClickOutside(() => setFiltersOpen(false));
+  const filtersCardRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+
+    function onMouseDown(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      if (filtersCardRef.current?.contains(target)) return;
+
+      // Select/MultiSelect dropdown (portal) - keep filtros abertos durante interação
+      if (target.closest?.("[data-composed]")) return;
+
+      setFiltersOpen(false);
+    }
+
+    function onTouchStart(event: TouchEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      if (filtersCardRef.current?.contains(target)) return;
+      if (target.closest?.("[data-composed]")) return;
+
+      setFiltersOpen(false);
+    }
+
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("touchstart", onTouchStart);
+
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("touchstart", onTouchStart);
+    };
+  }, [filtersOpen]);
 
   useEffect(() => {
     setFilters(props.initialFilters);
@@ -56,6 +90,32 @@ export function DashboardPageClient(props: {
   const totalPages = useMemo(() => {
     return Math.max(1, Math.ceil(props.total / props.pageSize));
   }, [props.pageSize, props.total]);
+
+  const chipStyles = {
+    root: { alignItems: "center" },
+    section: { display: "flex", alignItems: "center" },
+    label: { display: "flex", alignItems: "center" },
+  } as const;
+
+  function chipRemoveButton(params: { ariaLabel: string; onRemove: () => void }) {
+    return (
+      <ActionIcon
+        variant="transparent"
+        color="red"
+        size="xs"
+        aria-label={params.ariaLabel}
+        onClick={(e) => {
+          e.stopPropagation();
+          params.onRemove();
+        }}
+        style={{ alignSelf: "center" }}
+      >
+        <Text component="span" c="red" fw={700} size="xs" lh={1} style={{ display: "block" }}>
+          x
+        </Text>
+      </ActionIcon>
+    );
+  }
 
   function buildSearchParamsFrom(params: {
     filters: TaskFiltersValue;
@@ -73,6 +133,9 @@ export function DashboardPageClient(props: {
     if (typeof f.scoreMax === "number") sp.set("scoreMax", String(f.scoreMax));
     if (f.from?.trim()) sp.set("from", f.from.trim());
     if (f.to?.trim()) sp.set("to", f.to.trim());
+    if ((f.pageSize || DEFAULT_TASK_PAGE_SIZE) !== DEFAULT_TASK_PAGE_SIZE) {
+      sp.set("pageSize", String(f.pageSize));
+    }
 
     if (
       params.sortBy !== DEFAULT_TASK_SORT_BY ||
@@ -86,6 +149,23 @@ export function DashboardPageClient(props: {
 
     return sp;
   }
+
+  const dashboardReturnTo = useMemo(() => {
+    const sp = buildSearchParamsFrom({
+      filters: props.initialFilters,
+      page: props.page,
+      sortBy: props.initialSort.sortBy,
+      sortDir: props.initialSort.sortDir,
+    });
+
+    const qs = sp.toString();
+    return qs ? `/dashboard?${qs}` : "/dashboard";
+  }, [
+    props.initialFilters,
+    props.initialSort.sortBy,
+    props.initialSort.sortDir,
+    props.page,
+  ]);
 
   function buildSearchParams(
     next: { page?: number; sortBy?: TaskSortBy; sortDir?: TaskSortDir } = {},
@@ -116,6 +196,7 @@ export function DashboardPageClient(props: {
       from: "",
       to: "",
       tags: [],
+      pageSize: DEFAULT_TASK_PAGE_SIZE,
     });
     setSortBy(DEFAULT_TASK_SORT_BY);
     setSortDir(DEFAULT_TASK_SORT_DIR);
@@ -150,7 +231,14 @@ export function DashboardPageClient(props: {
         <Button onClick={() => setModalOpen(true)}>Nova tarefa</Button>
       </Group>
 
-      <Card withBorder ref={filtersCardRef}>
+      <Card
+        withBorder
+        ref={filtersCardRef}
+        onClick={() => {
+          if (!filtersOpen) setFiltersOpen(true);
+        }}
+        style={{ cursor: filtersOpen ? "default" : "pointer" }}
+      >
         <Group justify="space-between" align="center">
           <Text fw={600}>Filtros</Text>
           <ActionIcon
@@ -177,12 +265,9 @@ export function DashboardPageClient(props: {
                   variant="light"
                   color="gray"
                   rightSection={
-                    <ActionIcon
-                      variant="transparent"
-                      size="xs"
-                      aria-label="Remover filtro: Título"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                    chipRemoveButton({
+                      ariaLabel: "Remover filtro: Título",
+                      onRemove: () => {
                         setFilters(nextApplied);
                         pushDashboard(
                           buildSearchParamsFrom({
@@ -192,11 +277,10 @@ export function DashboardPageClient(props: {
                             sortDir: appliedSort.sortDir,
                           }),
                         );
-                      }}
-                    >
-                      x
-                    </ActionIcon>
+                      },
+                    })
                   }
+                  styles={chipStyles}
                 >
                   Título: {search}
                 </Badge>,
@@ -214,12 +298,9 @@ export function DashboardPageClient(props: {
                   variant="light"
                   color="gray"
                   rightSection={
-                    <ActionIcon
-                      variant="transparent"
-                      size="xs"
-                      aria-label="Remover filtro: Categoria"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                    chipRemoveButton({
+                      ariaLabel: "Remover filtro: Categoria",
+                      onRemove: () => {
                         setFilters(nextApplied);
                         pushDashboard(
                           buildSearchParamsFrom({
@@ -229,11 +310,10 @@ export function DashboardPageClient(props: {
                             sortDir: appliedSort.sortDir,
                           }),
                         );
-                      }}
-                    >
-                      x
-                    </ActionIcon>
+                      },
+                    })
                   }
+                  styles={chipStyles}
                 >
                   Categoria: {categoryLabel}
                 </Badge>,
@@ -253,12 +333,9 @@ export function DashboardPageClient(props: {
                     variant="light"
                     color="indigo"
                     rightSection={
-                      <ActionIcon
-                        variant="transparent"
-                        size="xs"
-                        aria-label={`Remover tag: ${label}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
+                      chipRemoveButton({
+                        ariaLabel: `Remover tag: ${label}`,
+                        onRemove: () => {
                           setFilters(nextApplied);
                           pushDashboard(
                             buildSearchParamsFrom({
@@ -268,11 +345,10 @@ export function DashboardPageClient(props: {
                               sortDir: appliedSort.sortDir,
                             }),
                           );
-                        }}
-                      >
-                        x
-                      </ActionIcon>
+                        },
+                      })
                     }
+                    styles={chipStyles}
                   >
                     {label}
                   </Badge>,
@@ -301,12 +377,9 @@ export function DashboardPageClient(props: {
                   variant="light"
                   color="gray"
                   rightSection={
-                    <ActionIcon
-                      variant="transparent"
-                      size="xs"
-                      aria-label="Remover filtro: Score"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                    chipRemoveButton({
+                      ariaLabel: "Remover filtro: Score",
+                      onRemove: () => {
                         setFilters(nextApplied);
                         pushDashboard(
                           buildSearchParamsFrom({
@@ -316,11 +389,10 @@ export function DashboardPageClient(props: {
                             sortDir: appliedSort.sortDir,
                           }),
                         );
-                      }}
-                    >
-                      x
-                    </ActionIcon>
+                      },
+                    })
                   }
+                  styles={chipStyles}
                 >
                   Score: {scoreLabel}
                 </Badge>,
@@ -338,12 +410,9 @@ export function DashboardPageClient(props: {
                   variant="light"
                   color="gray"
                   rightSection={
-                    <ActionIcon
-                      variant="transparent"
-                      size="xs"
-                      aria-label="Remover filtro: Data"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                    chipRemoveButton({
+                      ariaLabel: "Remover filtro: Data",
+                      onRemove: () => {
                         setFilters(nextApplied);
                         pushDashboard(
                           buildSearchParamsFrom({
@@ -353,13 +422,47 @@ export function DashboardPageClient(props: {
                             sortDir: appliedSort.sortDir,
                           }),
                         );
-                      }}
-                    >
-                      x
-                    </ActionIcon>
+                      },
+                    })
                   }
+                  styles={chipStyles}
                 >
                   Data: {dateLabel}
+                </Badge>,
+              );
+            }
+
+            if (
+              (applied.pageSize || DEFAULT_TASK_PAGE_SIZE) !== DEFAULT_TASK_PAGE_SIZE
+            ) {
+              const nextApplied: TaskFiltersValue = {
+                ...applied,
+                pageSize: DEFAULT_TASK_PAGE_SIZE,
+              };
+              chips.push(
+                <Badge
+                  key="pageSize"
+                  variant="light"
+                  color="gray"
+                  rightSection={
+                    chipRemoveButton({
+                      ariaLabel: "Remover filtro: Resultados por página",
+                      onRemove: () => {
+                        setFilters(nextApplied);
+                        pushDashboard(
+                          buildSearchParamsFrom({
+                            filters: nextApplied,
+                            page: 1,
+                            sortBy: appliedSort.sortBy,
+                            sortDir: appliedSort.sortDir,
+                          }),
+                        );
+                      },
+                    })
+                  }
+                  styles={chipStyles}
+                >
+                  Por página: {applied.pageSize}
                 </Badge>,
               );
             }
@@ -380,12 +483,9 @@ export function DashboardPageClient(props: {
                   variant="light"
                   color="gray"
                   rightSection={
-                    <ActionIcon
-                      variant="transparent"
-                      size="xs"
-                      aria-label="Remover ordenação personalizada"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                    chipRemoveButton({
+                      ariaLabel: "Remover ordenação personalizada",
+                      onRemove: () => {
                         setSortBy(DEFAULT_TASK_SORT_BY);
                         setSortDir(DEFAULT_TASK_SORT_DIR);
                         pushDashboard(
@@ -396,11 +496,10 @@ export function DashboardPageClient(props: {
                             sortDir: DEFAULT_TASK_SORT_DIR,
                           }),
                         );
-                      }}
-                    >
-                      x
-                    </ActionIcon>
+                      },
+                    })
                   }
+                  styles={chipStyles}
                 >
                   Ordenação: {sortByLabelMap[appliedSort.sortBy]} {dirSymbol}
                 </Badge>,
@@ -434,6 +533,7 @@ export function DashboardPageClient(props: {
       <Card withBorder p={0}>
         <TaskTable
           tasks={props.items}
+          returnTo={dashboardReturnTo}
           sortBy={sortBy}
           sortDir={sortDir}
           onSortChange={onSortChange}

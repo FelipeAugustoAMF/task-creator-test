@@ -18,6 +18,7 @@ import {
   SCORING_CATEGORY_LABELS,
   SCORING_CATEGORY_VALUES,
 } from "@/lib/scoring/taxonomy";
+import { DEFAULT_TASK_PAGE_SIZE } from "@/lib/tasks/query";
 
 export type TaskFiltersValue = {
   search: string;
@@ -27,6 +28,7 @@ export type TaskFiltersValue = {
   from: string;
   to: string;
   tags: string[];
+  pageSize: number;
 };
 
 const categoryOptions = [
@@ -35,6 +37,13 @@ const categoryOptions = [
     value,
     label: SCORING_CATEGORY_LABELS[value],
   })),
+];
+
+const pageSizeOptions = [
+  { value: "10", label: "10" },
+  { value: "20", label: "20" },
+  { value: "50", label: "50" },
+  { value: "100", label: "100" },
 ];
 
 export function TaskFilters(props: {
@@ -131,11 +140,26 @@ export function TaskFilters(props: {
             />
           </Group>
         </Grid.Col>
+
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Select
+            label="Resultados por página"
+            data={pageSizeOptions}
+            value={String(props.value.pageSize || DEFAULT_TASK_PAGE_SIZE)}
+            onChange={(value) =>
+              props.onChange({
+                ...props.value,
+                pageSize: value ? Number(value) : DEFAULT_TASK_PAGE_SIZE,
+              })
+            }
+            allowDeselect={false}
+          />
+        </Grid.Col>
       </Grid>
 
       <Divider />
 
-      <Group justify="flex-end">
+      <Group justify="flex-start">
         <Button variant="default" onClick={props.onClear}>
           Remover
         </Button>

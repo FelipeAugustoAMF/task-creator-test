@@ -11,6 +11,7 @@ import {
   Title,
 } from "@mantine/core";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import React from "react";
 
 import { PromptRunViewer } from "@/components/PromptRunViewer";
@@ -52,12 +53,15 @@ function formatTag(value: string) {
 
 export function TaskDetailClient(props: { task: TaskRow; runs: ScoringRunRow[] }) {
   const { task } = props;
+  const searchParams = useSearchParams();
+  const returnToRaw = searchParams.get("returnTo");
+  const returnTo = returnToRaw && returnToRaw.startsWith("/dashboard") ? returnToRaw : "/dashboard";
 
   return (
     <Stack gap="md">
       <Group justify="space-between" align="flex-start">
         <Stack gap={2}>
-          <Anchor component={Link} href="/dashboard" size="sm">
+          <Anchor component={Link} href={returnTo} size="sm">
             ← Voltar para tarefas
           </Anchor>
           <Title order={2}>{task.title}</Title>

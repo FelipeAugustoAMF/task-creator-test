@@ -80,7 +80,9 @@ export async function GET(request: Request) {
       ? tagsParam
           .split(",")
           .map((t) => coerceAllowedTag(t))
-          .filter((t): t is string => Boolean(t))
+          .filter(
+            (t): t is NonNullable<ReturnType<typeof coerceAllowedTag>> => t !== null,
+          )
       : undefined;
 
     const { items, total } = await listTasks({

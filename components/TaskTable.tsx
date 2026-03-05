@@ -81,6 +81,7 @@ function SortableTh(props: {
 
 export function TaskTable(props: {
   tasks: TaskRow[];
+  returnTo?: string;
   sortBy: TaskSortBy;
   sortDir: TaskSortDir;
   onSortChange: (by: TaskSortBy) => void;
@@ -147,7 +148,14 @@ export function TaskTable(props: {
                   )}
                 </Table.Td>
                 <Table.Td>
-                  <Anchor component={Link} href={`/dashboard/tasks/${task.id}`}>
+                  <Anchor
+                    component={Link}
+                    href={
+                      props.returnTo
+                        ? `/dashboard/tasks/${task.id}?returnTo=${encodeURIComponent(props.returnTo)}`
+                        : `/dashboard/tasks/${task.id}`
+                    }
+                  >
                     {task.title}
                   </Anchor>
                 </Table.Td>

@@ -15,7 +15,13 @@ import {
   TaskSortBy,
   TaskSortDir,
 } from "@/lib/tasks/query";
-import { PromptRow, ScoringRunRow, ScoringRunWithTaskRow, TaskRow } from "@/lib/tasks/types";
+import {
+  PromptRow,
+  ScoringRunRow,
+  ScoringRunTaskRef,
+  ScoringRunWithTaskRow,
+  TaskRow,
+} from "@/lib/tasks/types";
 
 export type CreateTaskInput = {
   title: string;
@@ -334,7 +340,20 @@ export async function listScoringRuns(params: ListScoringRunsParams): Promise<{
 
   if (error) throw new Error(error.message);
 
-  return { items: (data as ScoringRunWithTaskRow[]) ?? [], total: count ?? 0 };
+  const items = ((data ?? []) as Array<
+    Omit<ScoringRunWithTaskRow, "task"> & { task?: unknown }
+  >).map((run) => {
+    const embeddedTask = run.task;
+    const task = Array.isArray(embeddedTask)
+      ? ((embeddedTask[0] as ScoringRunTaskRef | undefined) ?? null)
+      : embeddedTask && typeof embeddedTask === "object"
+        ? (embeddedTask as ScoringRunTaskRef)
+        : null;
+
+    return { ...(run as Omit<ScoringRunWithTaskRow, "task">), task };
+  });
+
+  return { items, total: count ?? 0 };
 }
 
 export async function listPrompts(): Promise<PromptRow[]> {

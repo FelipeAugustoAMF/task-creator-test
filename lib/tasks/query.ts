@@ -5,6 +5,7 @@ export type TaskSortDir = "asc" | "desc";
 
 export const DEFAULT_TASK_SORT_BY: TaskSortBy = "created_at";
 export const DEFAULT_TASK_SORT_DIR: TaskSortDir = "desc";
+export const DEFAULT_TASK_PAGE_SIZE = 20;
 
 export function coerceTaskSortBy(input: unknown): TaskSortBy | undefined {
   if (typeof input !== "string") return undefined;
@@ -20,3 +21,10 @@ export function coerceTaskSortDir(input: unknown): TaskSortDir | undefined {
   return value === "asc" || value === "desc" ? (value as TaskSortDir) : undefined;
 }
 
+export function coerceTaskPageSize(input: unknown): number | undefined {
+  if (typeof input !== "string") return undefined;
+  const n = Number(input);
+  if (!Number.isFinite(n)) return undefined;
+  const safe = Math.round(n);
+  return Math.min(100, Math.max(1, safe));
+}

@@ -1,6 +1,6 @@
-# The Hybrid Architect (AI-Priority Middleware) — MVP
+# Criador de Tarefas — The Hybrid Architect (AI-Priority Middleware) — MVP
 
-MVP funcional com **Next.js (App Router) + TypeScript + Mantine + Supabase (Postgres) + OpenAI**.
+Este é apenas um pequeno MVP de teste feito com Next.js (App Router) + TypeScript + Supabase (Postgres) + OpenAI.
 
 ## ✅ O que este MVP faz
 

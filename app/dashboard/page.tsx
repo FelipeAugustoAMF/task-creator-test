@@ -3,8 +3,10 @@ import React from "react";
 import { DashboardPageClient } from "@/components/DashboardPageClient";
 import { coerceAllowedTag } from "@/lib/scoring/taxonomy";
 import {
+  coerceTaskPageSize,
   coerceTaskSortBy,
   coerceTaskSortDir,
+  DEFAULT_TASK_PAGE_SIZE,
   DEFAULT_TASK_SORT_BY,
   DEFAULT_TASK_SORT_DIR,
 } from "@/lib/tasks/query";
@@ -18,7 +20,8 @@ export default async function DashboardPage(props: {
   const sp = props.searchParams || {};
 
   const page = Math.max(1, Number(sp.page || "1") || 1);
-  const pageSize = 20;
+  const pageSizeRaw = typeof sp.pageSize === "string" ? sp.pageSize : undefined;
+  const pageSize = coerceTaskPageSize(pageSizeRaw) ?? DEFAULT_TASK_PAGE_SIZE;
 
   const scoreMin =
     typeof sp.scoreMin === "string" ? Number(sp.scoreMin) : undefined;
@@ -84,6 +87,7 @@ export default async function DashboardPage(props: {
         from: from || "",
         to: to || "",
         tags: tags || [],
+        pageSize,
       }}
     />
   );

@@ -1,8 +1,8 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-let cachedAdminClient: ReturnType<typeof createClient> | null = null;
+let cachedAdminClient: SupabaseClient | null = null;
 
 const noStoreFetch: typeof fetch = (input, init) => {
   return fetch(input, { ...(init ?? {}), cache: "no-store" });

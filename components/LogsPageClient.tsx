@@ -18,7 +18,7 @@ import {
   Title,
 } from "@mantine/core";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 
 import { ScoringRunWithTaskRow } from "@/lib/tasks/types";
@@ -53,6 +53,9 @@ export function LogsPageClient(props: {
   initialFilters: LogsFiltersValue;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnToRaw = searchParams.get("returnTo");
+  const returnTo = returnToRaw && returnToRaw.startsWith("/dashboard") ? returnToRaw : null;
   const [filters, setFilters] = useState<LogsFiltersValue>(props.initialFilters);
   const [selected, setSelected] = useState<ScoringRunWithTaskRow | null>(null);
 
@@ -66,6 +69,7 @@ export function LogsPageClient(props: {
 
   function buildSearchParams(next: { page?: number } = {}) {
     const sp = new URLSearchParams();
+    if (returnTo) sp.set("returnTo", returnTo);
     if (filters.from?.trim()) sp.set("from", filters.from.trim());
     if (filters.to?.trim()) sp.set("to", filters.to.trim());
     sp.set("page", String(next.page ?? props.page));
@@ -78,7 +82,11 @@ export function LogsPageClient(props: {
 
   function clearFilters() {
     setFilters({ from: "", to: "" });
-    router.push("/dashboard/logs");
+    if (returnTo) {
+      router.push(`/dashboard/logs?${new URLSearchParams({ returnTo }).toString()}`);
+    } else {
+      router.push("/dashboard/logs");
+    }
   }
 
   return (
@@ -150,7 +158,14 @@ export function LogsPageClient(props: {
                     <Table.Tr key={run.id}>
                       <Table.Td>{formatDate(run.created_at)}</Table.Td>
                       <Table.Td>
-                        <Anchor component={Link} href={`/dashboard/tasks/${run.task_id}`}>
+                        <Anchor
+                          component={Link}
+                          href={
+                            returnTo
+                              ? `/dashboard/tasks/${run.task_id}?returnTo=${encodeURIComponent(returnTo)}`
+                              : `/dashboard/tasks/${run.task_id}`
+                          }
+                        >
                           {run.task?.title || run.task_id}
                         </Anchor>
                       </Table.Td>

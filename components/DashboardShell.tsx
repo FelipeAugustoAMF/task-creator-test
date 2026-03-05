@@ -15,16 +15,36 @@ import {
 } from "@mantine/core";
 import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import React from "react";
+
+function coerceReturnTo(value: string | null): string | null {
+  if (!value) return null;
+  const v = value.trim();
+  return v.startsWith("/dashboard") ? v : null;
+}
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure();
   const [desktopOpened, setDesktopOpened] = useLocalStorage({
     key: "tha_nav_desktop_open",
     defaultValue: true,
   });
+
+  const currentQuery = searchParams.toString();
+  const currentUrl = currentQuery ? `${pathname}?${currentQuery}` : pathname;
+  const returnTo = coerceReturnTo(searchParams.get("returnTo"));
+
+  const tasksHref = returnTo ?? (pathname === "/dashboard" ? currentUrl : "/dashboard");
+
+  const logsHref = (() => {
+    const sp = new URLSearchParams();
+    if (tasksHref.startsWith("/dashboard")) sp.set("returnTo", tasksHref);
+    const qs = sp.toString();
+    return qs ? `/dashboard/logs?${qs}` : "/dashboard/logs";
+  })();
 
   return (
     <AppShell
@@ -76,7 +96,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <AppShell.Section component={ScrollArea} grow>
           <NavLink
             component={Link}
-            href="/dashboard"
+            href={tasksHref}
             label="Tarefas"
             leftSection={
               <ThemeIcon variant="light" color="indigo" radius="md" size={32}>
@@ -91,7 +111,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
           <NavLink
             component={Link}
-            href="/dashboard/logs"
+            href={logsHref}
             label="Logs"
             leftSection={
               <ThemeIcon variant="light" color="indigo" radius="md" size={32}>
