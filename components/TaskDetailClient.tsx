@@ -5,16 +5,22 @@ import {
   Button,
   Card,
   Group,
+  Modal,
   Stack,
   Tabs,
   Text,
+  TextInput,
+  Textarea,
   Title,
 } from "@mantine/core";
+import { useForm } from "@mantine/form";
+import { notifications } from "@mantine/notifications";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useState, useTransition } from "react";
 
 import { PromptRunViewer } from "@/components/PromptRunViewer";
+import { deleteTaskAction, updateTaskAction } from "@/app/dashboard/actions";
 import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
 import { ScoringRunRow, TaskRow } from "@/lib/tasks/types";
 
@@ -53,6 +59,7 @@ function formatTag(value: string) {
 
 export function TaskDetailClient(props: { task: TaskRow }) {
   const { task } = props;
+  const router = useRouter();
   const searchParams = useSearchParams();
   const returnToRaw = searchParams.get("returnTo");
   const returnTo = returnToRaw && returnToRaw.startsWith("/dashboard") ? returnToRaw : "/dashboard";
@@ -60,6 +67,59 @@ export function TaskDetailClient(props: { task: TaskRow }) {
   const [runs, setRuns] = useState<ScoringRunRow[] | null>(null);
   const [runsLoading, setRunsLoading] = useState(false);
   const [runsError, setRunsError] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const editForm = useForm({
+    initialValues: { title: task.title, description: task.description },
+    validate: {
+      title: (v) => (v.trim().length === 0 ? "Título é obrigatório" : null),
+      description: (v) => (v.trim().length === 0 ? "Descrição é obrigatória" : null),
+    },
+  });
+
+  function openEdit() {
+    editForm.setValues({ title: task.title, description: task.description });
+    editForm.resetDirty();
+    setEditOpen(true);
+  }
+
+  function submitEdit(values: { title: string; description: string }) {
+    startTransition(async () => {
+      const result = await updateTaskAction({ id: task.id, ...values });
+      if (!result.ok) {
+        notifications.show({
+          color: "red",
+          title: "Falha ao atualizar tarefa",
+          message: result.message,
+        });
+        return;
+      }
+
+      notifications.show({ color: "green", title: "Tarefa atualizada", message: "Salvo." });
+      setEditOpen(false);
+      router.refresh();
+    });
+  }
+
+  function confirmDelete() {
+    startTransition(async () => {
+      const result = await deleteTaskAction({ id: task.id });
+      if (!result.ok) {
+        notifications.show({
+          color: "red",
+          title: "Falha ao excluir tarefa",
+          message: result.message,
+        });
+        return;
+      }
+
+      notifications.show({ color: "green", title: "Tarefa excluída", message: "Removida." });
+      setDeleteOpen(false);
+      router.push(returnTo);
+    });
+  }
 
   function retryRuns() {
     setRuns(null);
@@ -72,6 +132,8 @@ export function TaskDetailClient(props: { task: TaskRow }) {
     setRuns(null);
     setRunsError(null);
     setRunsLoading(false);
+    setEditOpen(false);
+    setDeleteOpen(false);
   }, [task.id]);
 
   useEffect(() => {
@@ -126,16 +188,27 @@ export function TaskDetailClient(props: { task: TaskRow }) {
           </Text>
         </Stack>
 
-        <Group>
-          <Badge color={task.status === "done" ? "indigo" : "red"} variant="light">
-            {statusLabelMap[task.status] || task.status}
-          </Badge>
-          {task.status === "done" && (
-            <Badge color="gray" variant="light">
-              score {task.score}
+        <Stack gap="xs" align="flex-end">
+          <Group gap="xs">
+            <Button size="xs" variant="default" onClick={openEdit}>
+              Editar
+            </Button>
+            <Button size="xs" color="red" variant="light" onClick={() => setDeleteOpen(true)}>
+              Excluir
+            </Button>
+          </Group>
+
+          <Group gap="xs">
+            <Badge color={task.status === "done" ? "indigo" : "red"} variant="light">
+              {statusLabelMap[task.status] || task.status}
             </Badge>
-          )}
-        </Group>
+            {task.status === "done" && (
+              <Badge color="gray" variant="light">
+                score {task.score}
+              </Badge>
+            )}
+          </Group>
+        </Stack>
       </Group>
 
       <Tabs value={tab} onChange={setTab} keepMounted={false}>
@@ -208,6 +281,49 @@ export function TaskDetailClient(props: { task: TaskRow }) {
           ) : null}
         </Tabs.Panel>
       </Tabs>
+
+      <Modal opened={editOpen} onClose={() => setEditOpen(false)} title="Editar tarefa" centered>
+        <form onSubmit={editForm.onSubmit(submitEdit)}>
+          <Stack>
+            <TextInput label="Título" {...editForm.getInputProps("title")} />
+            <Textarea
+              label="Descrição"
+              autosize
+              minRows={6}
+              {...editForm.getInputProps("description")}
+            />
+            <Group justify="flex-end">
+              <Button variant="default" onClick={() => setEditOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" loading={isPending}>
+                Salvar
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
+
+      <Modal
+        opened={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Excluir tarefa"
+        centered
+      >
+        <Stack>
+          <Text>
+            Tem certeza que deseja excluir esta tarefa? Essa ação não pode ser desfeita.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button color="red" onClick={confirmDelete} loading={isPending}>
+              Excluir
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

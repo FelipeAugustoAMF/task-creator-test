@@ -41,7 +41,7 @@ export type ScoreTaskResult =
     };
 
 function getDefaultModel() {
-  return process.env.OPENAI_MODEL || "gpt-4o-mini";
+  return process.env.OPENAI_MODEL || "gpt-4.1-mini";
 }
 
 async function createJsonTextResponse(params: {

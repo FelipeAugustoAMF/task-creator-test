@@ -287,6 +287,37 @@ export async function getTaskById(id: string): Promise<TaskRow | null> {
   return (data as TaskRow | null) ?? null;
 }
 
+export type UpdateTaskInput = {
+  id: string;
+  title: string;
+  description: string;
+};
+
+export async function updateTask(input: UpdateTaskInput): Promise<TaskRow | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ title: input.title, description: input.description })
+    .eq("id", input.id)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return (data as TaskRow | null) ?? null;
+}
+
+export async function deleteTaskById(id: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) throw new Error(error.message);
+  return Array.isArray(data) ? data.length > 0 : Boolean(data);
+}
+
 export async function listTaskRuns(taskId: string): Promise<ScoringRunRow[]> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase

@@ -1,7 +1,9 @@
 export const OPENAI_LIGHT_MODEL_VALUES = [
-  "gpt-4o-mini",
   "gpt-4.1-mini",
+  "gpt-4o-mini",
   "gpt-4.1-nano",
+  "gpt-4o",
+  "gpt-4.1",
 ] as const;
 
 export type OpenAILightModel = (typeof OPENAI_LIGHT_MODEL_VALUES)[number];
@@ -18,4 +20,3 @@ export function coerceOpenAILightModel(input: unknown): OpenAILightModel | undef
     ? (v as OpenAILightModel)
     : undefined;
 }
-

@@ -31,7 +31,7 @@ SUPABASE_URL="https://xxxx.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 
 OPENAI_API_KEY="sk-..."
-OPENAI_MODEL="gpt-4o-mini"
+OPENAI_MODEL="gpt-4.1-mini"
 
 APP_API_KEY="change-me"
 ```

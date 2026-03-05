@@ -256,7 +256,9 @@ export function DashboardPageClient(props: {
           </Text>
         </Stack>
 
-        <Button onClick={() => setModalOpen(true)}>Nova tarefa</Button>
+        <Button onClick={() => setModalOpen(true)} leftSection="+">
+          Nova tarefa
+        </Button>
       </Group>
 
       <Card
