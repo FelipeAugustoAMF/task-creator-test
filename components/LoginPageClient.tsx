@@ -12,15 +12,10 @@ import {
   Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { notifications } from "@mantine/notifications";
-import { useRouter } from "next/navigation";
-import React, { useTransition } from "react";
+import React, { useState } from "react";
 
-import { loginAction } from "@/app/login/actions";
-
-export function LoginPageClient() {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+export function LoginPageClient(props: { errorMessage?: string | null }) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
     initialValues: {
@@ -33,38 +28,14 @@ export function LoginPageClient() {
     },
   });
 
-  function onSubmit(values: { username: string; password: string }) {
-    startTransition(async () => {
-      let result: Awaited<ReturnType<typeof loginAction>> | null = null;
-      try {
-        result = await loginAction(values);
-      } catch {
-        notifications.show({
-          color: "red",
-          title: "Falha ao entrar",
-          message: "Não foi possível logar. Tente novamente.",
-        });
-        return;
-      }
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    const validation = form.validate();
+    if (validation.hasErrors) {
+      event.preventDefault();
+      return;
+    }
 
-      if (!result.ok) {
-        notifications.show({
-          color: "red",
-          title: "Falha ao entrar",
-          message: result.message,
-        });
-        return;
-      }
-
-      // Hard navigation avoids App Router cache issues with auth redirects.
-      if (typeof window !== "undefined") {
-        window.location.assign("/dashboard");
-        return;
-      }
-
-      router.push("/dashboard");
-      router.refresh();
-    });
+    setIsSubmitting(true);
   }
 
   return (
@@ -77,6 +48,12 @@ export function LoginPageClient() {
           Use o usuário padrão abaixo para testar.
         </Text>
 
+        {props.errorMessage ? (
+          <Alert color="red" variant="light" title="Falha ao entrar">
+            <Text size="sm">{props.errorMessage}</Text>
+          </Alert>
+        ) : null}
+
         <Alert variant="light" title="Usuário padrão">
           <Text size="sm">
             Usuário: <b>admin</b>
@@ -86,21 +63,25 @@ export function LoginPageClient() {
         </Alert>
 
         <Card withBorder shadow="sm" p="lg" radius="md">
-          <form onSubmit={form.onSubmit(onSubmit)}>
+          <form method="post" action="/api/login" onSubmit={onSubmit}>
             <Stack>
               <TextInput
                 label="Usuário"
                 placeholder="admin"
                 autoComplete="username"
                 {...form.getInputProps("username")}
+                name="username"
+                required
               />
               <PasswordInput
                 label="Senha"
                 placeholder="admin"
                 autoComplete="current-password"
                 {...form.getInputProps("password")}
+                name="password"
+                required
               />
-              <Button type="submit" loading={isPending}>
+              <Button type="submit" loading={isSubmitting}>
                 Entrar
               </Button>
             </Stack>
