@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ActionIcon,
   AppShell,
   Burger,
   Drawer,
@@ -14,7 +13,7 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import { useDisclosure, useLocalStorage, useMediaQuery } from "@mantine/hooks";
+import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
@@ -28,12 +27,8 @@ function coerceReturnTo(value: string | null): string | null {
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure();
-  const [desktopOpened, setDesktopOpened] = useLocalStorage({
-    key: "tha_nav_desktop_open",
-    defaultValue: true,
-  });
-  const isMobile = useMediaQuery("(max-width: 991px)");
+  const [drawerOpened, { toggle: toggleDrawer, close: closeDrawer }] = useDisclosure(false);
+  const [desktopNavbarOpened, { toggle: toggleDesktopNavbar }] = useDisclosure(true);
 
   const currentQuery = searchParams.toString();
   const currentUrl = currentQuery ? `${pathname}?${currentQuery}` : pathname;
@@ -49,10 +44,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   })();
 
   useEffect(() => {
-    closeMobile();
-  }, [closeMobile, pathname]);
-
-  const burgerOpened = isMobile ? mobileOpened : desktopOpened;
+    closeDrawer();
+  }, [closeDrawer, pathname]);
 
   const navLinks = (
     <>
@@ -68,7 +61,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </ThemeIcon>
         }
         active={pathname === "/dashboard" || pathname.startsWith("/dashboard/tasks")}
-        onClick={closeMobile}
+        onClick={closeDrawer}
       />
 
       <NavLink
@@ -83,7 +76,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </ThemeIcon>
         }
         active={pathname.startsWith("/dashboard/logs")}
-        onClick={closeMobile}
+        onClick={closeDrawer}
       />
     </>
   );
@@ -94,49 +87,53 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       navbar={{
         width: 260,
         breakpoint: "md",
-        // Mantine AppShell navbar sometimes fails to slide-in on mobile depending on layout;
-        // use Drawer for mobile and keep AppShell.Navbar for desktop.
-        collapsed: { mobile: true, desktop: !desktopOpened },
+        collapsed: { mobile: true, desktop: !desktopNavbarOpened },
       }}
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Group gap="sm">
-            <Burger
-              opened={burgerOpened}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (isMobile) {
-                  toggleMobile();
-                } else {
-                  setDesktopOpened((v) => !v);
-                }
-              }}
-              size="sm"
-              type="button"
-              aria-label={burgerOpened ? "Fechar menu" : "Abrir menu"}
-            />
-            <Stack gap={0}>
-              <Title order={3}>The Hybrid Architect</Title>
-              <Text size="xs" c="dimmed">
-                Prioridade com IA
-              </Text>
-            </Stack>
-          </Group>
+        <Group h="100%" px="md" gap="sm">
+          <Burger
+            opened={drawerOpened}
+            onClick={toggleDrawer}
+            hiddenFrom="md"
+            size="sm"
+            type="button"
+            aria-label={drawerOpened ? "Fechar menu" : "Abrir menu"}
+          />
+          <Burger
+            opened={desktopNavbarOpened}
+            onClick={toggleDesktopNavbar}
+            visibleFrom="md"
+            size="sm"
+            type="button"
+            aria-label={desktopNavbarOpened ? "Fechar menu" : "Abrir menu"}
+          />
+          <Stack gap={0}>
+            <Title order={3}>The Hybrid Architect</Title>
+            <Text size="xs" c="dimmed">
+              Prioridade com IA
+            </Text>
+          </Stack>
         </Group>
       </AppShell.Header>
 
       <Drawer
-        opened={mobileOpened}
-        onClose={closeMobile}
+        opened={drawerOpened}
+        onClose={closeDrawer}
         title="Navegação"
         padding="md"
-        size={260}
+        size="80%"
+        position="left"
         hiddenFrom="md"
         withinPortal
-        keepMounted={false}
-        zIndex={1000}
+        keepMounted
+        zIndex={2000}
+        withCloseButton
+        closeOnClickOutside
+        closeOnEscape
+        trapFocus
+        returnFocus
         overlayProps={{ backgroundOpacity: 0.55, blur: 2 }}
       >
         <Stack gap="xs">
@@ -147,21 +144,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </Stack>
       </Drawer>
 
-      <AppShell.Navbar p="md">
+      <AppShell.Navbar p="md" visibleFrom="md">
         <AppShell.Section mb="sm">
-          <Group justify="space-between">
-            <Text size="sm" fw={600}>
-              Navegação
-            </Text>
-            <ActionIcon
-              variant="subtle"
-              aria-label={desktopOpened ? "Recolher menu" : "Expandir menu"}
-              onClick={() => setDesktopOpened((v) => !v)}
-              visibleFrom="md"
-            >
-              {desktopOpened ? "«" : "»"}
-            </ActionIcon>
-          </Group>
+          <Text size="sm" fw={600}>
+            Navegação
+          </Text>
         </AppShell.Section>
 
         <AppShell.Section component={ScrollArea} grow>
