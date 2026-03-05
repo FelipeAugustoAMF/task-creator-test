@@ -84,7 +84,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const logoutNavLink = (
     <NavLink
-      component={Link}
+      component="a"
       href="/logout"
       label="Sair"
       leftSection={
