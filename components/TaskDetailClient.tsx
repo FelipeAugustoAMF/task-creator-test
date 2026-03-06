@@ -1,22 +1,49 @@
 "use client";
 
 import {
+  ActionIcon,
   Badge,
   Button,
   Card,
   Checkbox,
+  CopyButton,
+  Divider,
+  Grid,
   Group,
   Loader,
+  Menu,
   Modal,
   Stack,
   Tabs,
   Text,
   TextInput,
   Textarea,
+  ThemeIcon,
+  Tooltip,
   Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
+import {
+  IconArrowLeft,
+  IconCalendarEvent,
+  IconCheck,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconCopy,
+  IconDeviceFloppy,
+  IconDotsVertical,
+  IconFileText,
+  IconGauge,
+  IconHash,
+  IconHistory,
+  IconListDetails,
+  IconMessage,
+  IconPencil,
+  IconTags,
+  IconTrash,
+  IconX,
+} from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState, useTransition } from "react";
@@ -61,6 +88,17 @@ function formatCategory(value: string) {
 
 function formatTag(value: string) {
   return (ALLOWED_TAG_LABELS as Record<string, string>)[value] || value;
+}
+
+function scoreColor(score: number) {
+  if (score >= 8) return "red";
+  if (score >= 5) return "yellow";
+  return "green";
+}
+
+function formatConfidence(value: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  return `${Math.round(value * 100)}%`;
 }
 
 export function TaskDetailClient(props: { task: TaskRow }) {
@@ -194,137 +232,391 @@ export function TaskDetailClient(props: { task: TaskRow }) {
       });
   }, [runs, runsLoading, runsError, tab, task.id]);
 
-  return (
-    <Stack gap="md">
-      <Group justify="space-between" align="flex-start">
+  const completionBadge = (
+    <Badge color={task.is_completed ? "green" : "yellow"} variant="light">
+      {task.is_completed ? "concluída" : "pendente"}
+    </Badge>
+  );
+
+  const statusBadge = (
+    <Badge color={task.status === "done" ? "indigo" : "red"} variant="light">
+      {statusLabelMap[task.status] || task.status}
+    </Badge>
+  );
+
+  const scoreBadge =
+    task.status === "done" && typeof task.score === "number" ? (
+      <Badge color={scoreColor(task.score)} variant="light">
+        score {task.score}
+      </Badge>
+    ) : null;
+
+  const summaryFields = (
+    <Stack gap="sm">
+      <Group justify="space-between" align="center">
         <Stack gap={2}>
-          <Button
-            component={Link}
-            href={returnTo}
-            variant="default"
-            size="xs"
-            radius="xl"
-            leftSection="←"
-          >
-            Voltar para tarefas
-          </Button>
-          <Title order={2}>{task.title}</Title>
-          <Text c="dimmed" size="sm">
-            {formatDate(task.created_at)}
+          <Text fw={600}>Resumo</Text>
+          <Text size="xs" c="dimmed">
+            Score
           </Text>
-          <Text c="dimmed" size="sm" lineClamp={2}>
-            {task.description}
-          </Text>
-        </Stack>
-
-        <Stack gap="xs" align="flex-end">
-          <Group gap="xs">
-            <Button
-              size="xs"
-              color={task.is_completed ? "gray" : "green"}
-              variant={task.is_completed ? "default" : "light"}
-              onClick={toggleCompleted}
-              loading={isPending}
+          <Group gap={6} align="baseline">
+            <Text
+              fw={800}
+              size="xl"
+              c={
+                task.status === "done" && typeof task.score === "number"
+                  ? scoreColor(task.score)
+                  : "dimmed"
+              }
             >
-              {task.is_completed ? "Marcar como pendente" : "Marcar como concluída"}
-            </Button>
-            <Button size="xs" variant="default" onClick={openEdit}>
-              Editar
-            </Button>
-            <Button size="xs" color="red" variant="light" onClick={() => setDeleteOpen(true)}>
-              Excluir
-            </Button>
-          </Group>
-
-          <Group gap="xs">
-            <Badge color={task.is_completed ? "green" : "yellow"} variant="light">
-              {task.is_completed ? "concluída" : "pendente"}
-            </Badge>
-            <Badge color={task.status === "done" ? "indigo" : "red"} variant="light">
-              {statusLabelMap[task.status] || task.status}
-            </Badge>
-            {task.status === "done" && (
-              <Badge color="gray" variant="light">
-                score {task.score}
-              </Badge>
-            )}
+              {task.status === "done" && typeof task.score === "number" ? task.score : "—"}
+            </Text>
+            <Text size="xs" c="dimmed">
+              /10
+            </Text>
           </Group>
         </Stack>
+
+        <ThemeIcon
+          size={48}
+          radius="md"
+          variant="light"
+          color={
+            task.status === "done" && typeof task.score === "number"
+              ? scoreColor(task.score)
+              : "gray"
+          }
+        >
+          <IconGauge size={24} />
+        </ThemeIcon>
       </Group>
 
-      <Tabs value={tab} onChange={setTab} keepMounted={false}>
-        <Tabs.List>
-          <Tabs.Tab value="details">Detalhes</Tabs.Tab>
-          <Tabs.Tab value="logs">Logs de prompt</Tabs.Tab>
-        </Tabs.List>
+      <Group gap={6} wrap="wrap">
+        {completionBadge}
+        {statusBadge}
+        {scoreBadge}
+      </Group>
 
-        <Tabs.Panel value="details" pt="md">
-          <Card withBorder>
-            <Stack gap="sm">
-              <Group gap="xs">
-                <Text fw={600}>Categoria:</Text>
-                <Text>{task.category ? formatCategory(task.category) : "—"}</Text>
-              </Group>
-              <Group gap="xs">
-                <Text fw={600}>Confiança:</Text>
-                <Text>
-                  {typeof task.confidence === "number" ? task.confidence.toFixed(2) : "—"}
-                </Text>
-              </Group>
-              <Group gap="xs" align="flex-start">
-                <Text fw={600}>Tags:</Text>
-                <Group gap={6}>
-                  {task.tags?.length ? (
-                    task.tags.map((t) => (
-                      <Badge key={t} size="sm" variant="outline">
-                        {formatTag(t)}
-                      </Badge>
-                    ))
+      <Divider />
+
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Text size="sm" c="dimmed">
+          Categoria
+        </Text>
+        {task.category ? (
+          <Badge size="sm" color="gray" variant="light">
+            {formatCategory(task.category)}
+          </Badge>
+        ) : (
+          <Text size="sm" c="dimmed">
+            —
+          </Text>
+        )}
+      </Group>
+
+      <Group justify="space-between" align="center">
+        <Text size="sm" c="dimmed">
+          Confiança
+        </Text>
+        <Text size="sm" fw={600}>
+          {formatConfidence(task.confidence)}
+        </Text>
+      </Group>
+    </Stack>
+  );
+
+  const infoFields = (
+    <Stack gap="sm">
+      <Text fw={600}>Info</Text>
+
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+          <ThemeIcon size={32} radius="md" variant="light" color="gray">
+            <IconCalendarEvent size={18} />
+          </ThemeIcon>
+          <Stack gap={0} style={{ minWidth: 0 }}>
+            <Text size="xs" c="dimmed">
+              Criada em
+            </Text>
+            <Text size="sm" lineClamp={1}>
+              {formatDate(task.created_at)}
+            </Text>
+          </Stack>
+        </Group>
+      </Group>
+
+      <Group justify="space-between" align="center" wrap="nowrap">
+        <Group gap="sm" wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
+          <ThemeIcon size={32} radius="md" variant="light" color="gray">
+            <IconHash size={18} />
+          </ThemeIcon>
+          <Stack gap={0} style={{ minWidth: 0 }}>
+            <Text size="xs" c="dimmed">
+              Task ID
+            </Text>
+            <Text
+              size="sm"
+              style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" }}
+              lineClamp={1}
+            >
+              {task.id}
+            </Text>
+          </Stack>
+        </Group>
+
+        <CopyButton value={task.id} timeout={1200}>
+          {({ copied, copy }) => (
+            <Tooltip label={copied ? "Copiado" : "Copiar"} withArrow>
+              <ActionIcon
+                variant="subtle"
+                color={copied ? "teal" : "gray"}
+                onClick={copy}
+                aria-label={copied ? "Copiado" : "Copiar Task ID"}
+              >
+                {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
+              </ActionIcon>
+            </Tooltip>
+          )}
+        </CopyButton>
+      </Group>
+    </Stack>
+  );
+
+  return (
+    <Stack gap="md">
+      <Group justify="space-between" align="center" wrap="nowrap">
+        <Button
+          component={Link}
+          href={returnTo}
+          variant="subtle"
+          size="sm"
+          radius="xl"
+          leftSection={<IconArrowLeft size={18} />}
+        >
+          Voltar
+        </Button>
+
+        <Group hiddenFrom="md">
+          <Menu shadow="md" width={220} position="bottom-end" withinPortal>
+            <Menu.Target>
+              <ActionIcon variant="subtle" size="lg" aria-label="Ações">
+                <IconDotsVertical size={20} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>Ações</Menu.Label>
+              <Menu.Item
+                leftSection={
+                  task.is_completed ? (
+                    <IconCircleDashed size={16} />
                   ) : (
-                    <Text c="dimmed">—</Text>
-                  )}
-                </Group>
-              </Group>
-              <Group gap="xs" align="flex-start">
-                <Text fw={600}>Justificativa:</Text>
-                <Text style={{ flex: 1 }}>{task.rationale || "—"}</Text>
-              </Group>
-              <Stack gap={4}>
-                <Text fw={600}>Descrição</Text>
-                <Text style={{ whiteSpace: "pre-wrap" }}>{task.description}</Text>
-              </Stack>
-            </Stack>
-          </Card>
-        </Tabs.Panel>
+                    <IconCircleCheck size={16} />
+                  )
+                }
+                onClick={toggleCompleted}
+                disabled={isPending}
+              >
+                {task.is_completed ? "Marcar como pendente" : "Marcar como concluída"}
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconPencil size={16} />}
+                onClick={openEdit}
+                disabled={isPending}
+              >
+                Editar
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                color="red"
+                leftSection={<IconTrash size={16} />}
+                onClick={() => setDeleteOpen(true)}
+                disabled={isPending}
+              >
+                Excluir
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Group>
 
-        <Tabs.Panel value="logs" pt="md">
-          {runsLoading ? (
-            <Card withBorder>
-              <Group gap="xs">
-                <Loader size="sm" />
-                <Text c="dimmed" size="sm">
-                  Carregando logs…
-                </Text>
-              </Group>
-            </Card>
-          ) : runsError ? (
-            <Card withBorder>
+      <Grid gutter="md">
+        <Grid.Col span={{ base: 12, md: 8 }}>
+          <Stack gap="md">
+            <Card withBorder radius="md">
               <Stack gap="xs">
-                <Text c="red" size="sm">
-                  {runsError}
-                </Text>
-                <Group justify="flex-end">
-                  <Button size="xs" variant="default" onClick={retryRuns}>
-                    Tentar novamente
-                  </Button>
+                <Title order={2}>{task.title}</Title>
+
+                <Group gap={6} wrap="wrap">
+                  {completionBadge}
+                  {statusBadge}
+                  {scoreBadge}
                 </Group>
+
+                <Text c="dimmed" size="sm" style={{ whiteSpace: "pre-wrap" }} lineClamp={3}>
+                  {task.description}
+                </Text>
               </Stack>
             </Card>
-          ) : runs ? (
-            <PromptRunViewer runs={runs} />
-          ) : null}
-        </Tabs.Panel>
-      </Tabs>
+
+            <Card withBorder radius="md" hiddenFrom="md">
+              <Stack gap="md">
+                {summaryFields}
+                <Divider />
+                {infoFields}
+              </Stack>
+            </Card>
+
+            <Tabs value={tab} onChange={setTab} keepMounted={false} variant="outline">
+              <Tabs.List>
+                <Tabs.Tab value="details">
+                  <Group gap={6}>
+                    <IconListDetails size={16} />
+                    <span>Detalhes</span>
+                  </Group>
+                </Tabs.Tab>
+                <Tabs.Tab value="logs">
+                  <Group gap={6}>
+                    <IconHistory size={16} />
+                    <span>Logs de prompt</span>
+                  </Group>
+                </Tabs.Tab>
+              </Tabs.List>
+
+              <Tabs.Panel value="details" pt="md">
+                <Stack gap="md">
+                  <Card withBorder radius="md">
+                    <Stack gap="xs">
+                      <Group gap="xs">
+                        <ThemeIcon size={30} radius="md" variant="light" color="indigo">
+                          <IconFileText size={16} />
+                        </ThemeIcon>
+                        <Text fw={600}>Descrição</Text>
+                      </Group>
+                      <Text style={{ whiteSpace: "pre-wrap" }}>{task.description}</Text>
+                    </Stack>
+                  </Card>
+
+                  <Card withBorder radius="md">
+                    <Stack gap="xs">
+                      <Group gap="xs">
+                        <ThemeIcon size={30} radius="md" variant="light" color="indigo">
+                          <IconMessage size={16} />
+                        </ThemeIcon>
+                        <Text fw={600}>Justificativa</Text>
+                      </Group>
+                      {task.rationale ? (
+                        <Text style={{ whiteSpace: "pre-wrap" }}>{task.rationale}</Text>
+                      ) : (
+                        <Text c="dimmed">—</Text>
+                      )}
+                    </Stack>
+                  </Card>
+
+                  <Card withBorder radius="md">
+                    <Stack gap="xs">
+                      <Group gap="xs">
+                        <ThemeIcon size={30} radius="md" variant="light" color="indigo">
+                          <IconTags size={16} />
+                        </ThemeIcon>
+                        <Text fw={600}>Tags</Text>
+                      </Group>
+                      <Group gap={6} wrap="wrap">
+                        {task.tags?.length ? (
+                          task.tags.map((t) => (
+                            <Badge key={t} size="sm" variant="outline">
+                              {formatTag(t)}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Text c="dimmed">—</Text>
+                        )}
+                      </Group>
+                    </Stack>
+                  </Card>
+                </Stack>
+              </Tabs.Panel>
+
+              <Tabs.Panel value="logs" pt="md">
+                {runsLoading ? (
+                  <Card withBorder radius="md">
+                    <Group gap="xs">
+                      <Loader size="sm" />
+                      <Text c="dimmed" size="sm">
+                        Carregando logs…
+                      </Text>
+                    </Group>
+                  </Card>
+                ) : runsError ? (
+                  <Card withBorder radius="md">
+                    <Stack gap="xs">
+                      <Text c="red" size="sm">
+                        {runsError}
+                      </Text>
+                      <Group justify="flex-end">
+                        <Button size="xs" variant="default" onClick={retryRuns}>
+                          Tentar novamente
+                        </Button>
+                      </Group>
+                    </Stack>
+                  </Card>
+                ) : runs ? (
+                  <PromptRunViewer runs={runs} />
+                ) : null}
+              </Tabs.Panel>
+            </Tabs>
+          </Stack>
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Stack gap="md" visibleFrom="md">
+            <Card withBorder radius="md">
+              {summaryFields}
+            </Card>
+
+            <Card withBorder radius="md">
+              <Stack gap="sm">
+                <Text fw={600}>Ações</Text>
+
+                <Button
+                  fullWidth
+                  color={task.is_completed ? "gray" : "green"}
+                  variant={task.is_completed ? "default" : "light"}
+                  onClick={toggleCompleted}
+                  loading={isPending}
+                  leftSection={
+                    task.is_completed ? <IconCircleDashed size={18} /> : <IconCircleCheck size={18} />
+                  }
+                >
+                  {task.is_completed ? "Marcar como pendente" : "Marcar como concluída"}
+                </Button>
+                <Button
+                  fullWidth
+                  variant="default"
+                  onClick={openEdit}
+                  leftSection={<IconPencil size={18} />}
+                  disabled={isPending}
+                >
+                  Editar
+                </Button>
+                <Button
+                  fullWidth
+                  color="red"
+                  variant="light"
+                  onClick={() => setDeleteOpen(true)}
+                  leftSection={<IconTrash size={18} />}
+                  disabled={isPending}
+                >
+                  Excluir
+                </Button>
+              </Stack>
+            </Card>
+
+            <Card withBorder radius="md">
+              {infoFields}
+            </Card>
+          </Stack>
+        </Grid.Col>
+      </Grid>
 
       <Modal opened={editOpen} onClose={() => setEditOpen(false)} title="Editar tarefa" centered>
         <form onSubmit={editForm.onSubmit(submitEdit)}>
@@ -342,10 +634,14 @@ export function TaskDetailClient(props: { task: TaskRow }) {
               {...editForm.getInputProps("reassess", { type: "checkbox" })}
             />
             <Group justify="flex-end">
-              <Button variant="default" onClick={() => setEditOpen(false)}>
+              <Button
+                variant="default"
+                onClick={() => setEditOpen(false)}
+                leftSection={<IconX size={18} />}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" loading={isPending}>
+              <Button type="submit" loading={isPending} leftSection={<IconDeviceFloppy size={18} />}>
                 Salvar
               </Button>
             </Group>
@@ -364,10 +660,19 @@ export function TaskDetailClient(props: { task: TaskRow }) {
             Tem certeza que deseja excluir esta tarefa? Essa ação não pode ser desfeita.
           </Text>
           <Group justify="flex-end">
-            <Button variant="default" onClick={() => setDeleteOpen(false)}>
+            <Button
+              variant="default"
+              onClick={() => setDeleteOpen(false)}
+              leftSection={<IconX size={18} />}
+            >
               Cancelar
             </Button>
-            <Button color="red" onClick={confirmDelete} loading={isPending}>
+            <Button
+              color="red"
+              onClick={confirmDelete}
+              loading={isPending}
+              leftSection={<IconTrash size={18} />}
+            >
               Excluir
             </Button>
           </Group>

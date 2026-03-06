@@ -1,6 +1,6 @@
 "use client";
 
-import { Accordion, Badge, Card, Group, Stack, Text, Textarea, Title } from "@mantine/core";
+import { Accordion, Badge, Card, Group, Stack, Text, Textarea } from "@mantine/core";
 import React from "react";
 
 import { ScoringRunRow } from "@/lib/tasks/types";
@@ -24,8 +24,6 @@ export function PromptRunViewer(props: { runs: ScoringRunRow[] }) {
 
   return (
     <Stack gap="md">
-      <Title order={4}>Logs de scoring</Title>
-
       <Accordion variant="separated" multiple>
         {props.runs.map((run) => {
           const parsed =
