@@ -312,6 +312,103 @@ export async function updateTask(input: UpdateTaskInput): Promise<TaskRow | null
   return (data as TaskRow | null) ?? null;
 }
 
+export async function updateTaskAndRescore(input: UpdateTaskInput): Promise<TaskRow | null> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: updatedTask, error: updateError } = await supabase
+    .from("tasks")
+    .update({ title: input.title, description: input.description })
+    .eq("id", input.id)
+    .select("*")
+    .maybeSingle();
+
+  if (updateError) throw new Error(updateError.message);
+  if (!updatedTask) return null;
+
+  let typedPrompt: PromptRow;
+  try {
+    typedPrompt = await getOrSeedDefaultPrompt(supabase);
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : String(error));
+  }
+
+  const allowedTags = formatAllowedTagsForPrompt();
+
+  let renderedPrompt = renderPrompt(typedPrompt.template, {
+    task_id: input.id,
+    title: input.title,
+    description: input.description,
+    allowed_tags: allowedTags,
+  });
+
+  if (!typedPrompt.template.includes("{{allowed_tags}}")) {
+    renderedPrompt = `${renderedPrompt}\n\nTags permitidas (escolha somente desta lista; máximo 8; use exatamente como escrito):\n${allowedTags}`;
+  }
+
+  const { data: latestRun, error: latestRunError } = await supabase
+    .from("scoring_runs")
+    .select("model")
+    .eq("task_id", input.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestRunError) {
+    console.warn("updateTaskAndRescore latest run error:", latestRunError.message);
+  }
+
+  const latestModel =
+    latestRun && typeof (latestRun as any).model === "string" ? (latestRun as any).model : undefined;
+  const model = coerceOpenAILightModel(latestModel);
+
+  const scoreResult = await scoreTaskWithOpenAI({ renderedPrompt, model });
+
+  const scoringRunInsert = {
+    task_id: input.id,
+    prompt_id: typedPrompt.id,
+    provider: "openai",
+    model: scoreResult.model,
+    prompt_version: typedPrompt.version,
+    rendered_prompt: scoreResult.usedPrompt,
+    raw_response: scoreResult.rawResponse,
+    parsed_output: scoreResult.ok ? scoreResult.parsed : null,
+  } satisfies Partial<ScoringRunRow>;
+
+  const { error: runError } = await supabase.from("scoring_runs").insert(scoringRunInsert);
+  if (runError) {
+    throw new Error(`Falha ao inserir log de scoring: ${runError.message}`);
+  }
+
+  const nextTaskUpdate = scoreResult.ok
+    ? {
+        status: "done",
+        score: scoreResult.parsed.score,
+        category: scoreResult.parsed.category,
+        tags: scoreResult.parsed.tags,
+        rationale: scoreResult.parsed.rationale,
+        confidence: scoreResult.parsed.confidence,
+      }
+    : {
+        status: "failed",
+        score: null,
+        category: null,
+        tags: [],
+        rationale: null,
+        confidence: null,
+      };
+
+  const { data: rescoredTask, error: scoreUpdateError } = await supabase
+    .from("tasks")
+    .update(nextTaskUpdate)
+    .eq("id", input.id)
+    .select("*")
+    .maybeSingle();
+
+  if (scoreUpdateError) throw new Error(scoreUpdateError.message);
+
+  return (rescoredTask as TaskRow | null) ?? null;
+}
+
 export async function setTaskCompleted(params: {
   id: string;
   isCompleted: boolean;

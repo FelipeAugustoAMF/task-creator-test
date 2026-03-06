@@ -264,13 +264,12 @@ export function LogsPageClient(props: {
                 {!isCompact ? <Table.Th>Modelo</Table.Th> : null}
                 {!isCompact ? <Table.Th>Prompt</Table.Th> : null}
                 <Table.Th>Resultado</Table.Th>
-                {!isCompact ? <Table.Th /> : null}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {props.items.length === 0 ? (
                 <Table.Tr>
-                  <Table.Td colSpan={isCompact ? 3 : 6}>
+                  <Table.Td colSpan={isCompact ? 3 : 5}>
                     <Text c="dimmed" size="sm">
                       Nenhum log encontrado.
                     </Text>
@@ -283,7 +282,6 @@ export function LogsPageClient(props: {
                     <Table.Tr
                       key={run.id}
                       onClick={(e) => {
-                        if (!isCompact) return;
                         if (e.defaultPrevented) return;
                         if (e.button !== 0) return;
 
@@ -297,15 +295,14 @@ export function LogsPageClient(props: {
                         setSelected(run);
                       }}
                       onKeyDown={(e) => {
-                        if (!isCompact) return;
-                        if (e.key !== "Enter") return;
+                        if (e.key !== "Enter" && e.key !== " ") return;
                         e.preventDefault();
                         setSelected(run);
                       }}
-                      tabIndex={isCompact ? 0 : undefined}
-                      role={isCompact ? "button" : undefined}
-                      aria-label={isCompact ? `Ver log: ${run.task?.title || run.task_id}` : undefined}
-                      style={isCompact ? { cursor: "pointer" } : undefined}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Ver log: ${run.task?.title || run.task_id}`}
+                      style={{ cursor: "pointer" }}
                     >
                       <Table.Td>
                         {isCompact ? formatDateCompact(run.created_at) : formatDate(run.created_at)}
@@ -361,15 +358,8 @@ export function LogsPageClient(props: {
                           <Badge color="indigo" variant="light">
                             score {score}
                           </Badge>
-                        )}
+                          )}
                       </Table.Td>
-                      {!isCompact ? (
-                        <Table.Td>
-                          <Button size="xs" variant="default" onClick={() => setSelected(run)}>
-                            Ver
-                          </Button>
-                        </Table.Td>
-                      ) : null}
                     </Table.Tr>
                   );
                 })

@@ -10,6 +10,7 @@ import {
   deleteTaskById,
   setTaskCompleted,
   updateTask,
+  updateTaskAndRescore,
 } from "@/lib/tasks/service";
 import { TaskRow } from "@/lib/tasks/types";
 
@@ -23,6 +24,7 @@ const updateTaskSchema = z.object({
   id: z.string().uuid(),
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().min(1).max(10000),
+  reassess: z.boolean().optional().default(true),
 });
 
 const deleteTaskSchema = z.object({
@@ -82,6 +84,7 @@ export async function updateTaskAction(input: {
   id: string;
   title: string;
   description: string;
+  reassess?: boolean;
 }): Promise<UpdateTaskActionResult> {
   if (!getSessionUserId()) {
     return { ok: false, message: "Não autorizado" };
@@ -92,7 +95,15 @@ export async function updateTaskAction(input: {
     return { ok: false, message: "Entrada inválida" };
   }
 
-  const updated = await updateTask(parsed.data);
+  let updated: TaskRow | null = null;
+  try {
+    updated = parsed.data.reassess
+      ? await updateTaskAndRescore(parsed.data)
+      : await updateTask(parsed.data);
+  } catch (error) {
+    console.error("updateTaskAction error:", error);
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
   if (!updated) {
     return { ok: false, message: "Não encontrado" };
   }

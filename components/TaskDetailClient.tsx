@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   Card,
+  Checkbox,
   Group,
   Loader,
   Modal,
@@ -77,7 +78,7 @@ export function TaskDetailClient(props: { task: TaskRow }) {
   const [isPending, startTransition] = useTransition();
 
   const editForm = useForm({
-    initialValues: { title: task.title, description: task.description },
+    initialValues: { title: task.title, description: task.description, reassess: true },
     validate: {
       title: (v) => (v.trim().length === 0 ? "Título é obrigatório" : null),
       description: (v) => (v.trim().length === 0 ? "Descrição é obrigatória" : null),
@@ -85,12 +86,12 @@ export function TaskDetailClient(props: { task: TaskRow }) {
   });
 
   function openEdit() {
-    editForm.setValues({ title: task.title, description: task.description });
+    editForm.setValues({ title: task.title, description: task.description, reassess: true });
     editForm.resetDirty();
     setEditOpen(true);
   }
 
-  function submitEdit(values: { title: string; description: string }) {
+  function submitEdit(values: { title: string; description: string; reassess: boolean }) {
     startTransition(async () => {
       const result = await updateTaskAction({ id: task.id, ...values });
       if (!result.ok) {
@@ -104,6 +105,7 @@ export function TaskDetailClient(props: { task: TaskRow }) {
 
       notifications.show({ color: "green", title: "Tarefa atualizada", message: "Salvo." });
       setEditOpen(false);
+      retryRuns();
       router.refresh();
     });
   }
@@ -333,6 +335,11 @@ export function TaskDetailClient(props: { task: TaskRow }) {
               autosize
               minRows={6}
               {...editForm.getInputProps("description")}
+            />
+            <Checkbox
+              label="Reavaliar tarefa"
+              description="Roda o prompt novamente e atualiza score/categoria/tags."
+              {...editForm.getInputProps("reassess", { type: "checkbox" })}
             />
             <Group justify="flex-end">
               <Button variant="default" onClick={() => setEditOpen(false)}>
