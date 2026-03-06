@@ -37,6 +37,14 @@ export type ScoringRunRow = {
 
 export type ScoringRunTaskRef = { id: string; title: string };
 
-export type ScoringRunWithTaskRow = ScoringRunRow & {
+export type ScoringRunPromptRef = { id: string; name: string; version: number };
+
+export type ScoringRunSummaryRow = Omit<ScoringRunRow, "rendered_prompt" | "raw_response"> & {
   task: ScoringRunTaskRef | null;
+  prompt: ScoringRunPromptRef | null;
+};
+
+export type ScoringRunDetailRow = ScoringRunRow & {
+  task: ScoringRunTaskRef | null;
+  prompt: ScoringRunPromptRef | null;
 };

@@ -18,9 +18,11 @@ import {
 } from "@/lib/tasks/query";
 import {
   PromptRow,
+  ScoringRunDetailRow,
+  ScoringRunPromptRef,
   ScoringRunRow,
   ScoringRunTaskRef,
-  ScoringRunWithTaskRow,
+  ScoringRunSummaryRow,
   TaskRow,
 } from "@/lib/tasks/types";
 
@@ -460,7 +462,7 @@ export type ListScoringRunsParams = {
 };
 
 export async function listScoringRuns(params: ListScoringRunsParams): Promise<{
-  items: ScoringRunWithTaskRow[];
+  items: ScoringRunSummaryRow[];
   total: number;
 }> {
   const supabase = getSupabaseAdmin();
@@ -474,7 +476,7 @@ export async function listScoringRuns(params: ListScoringRunsParams): Promise<{
   const toIndex = fromIndex + safePageSize - 1;
 
   let query = supabase.from("scoring_runs").select(
-    "id, task_id, prompt_id, provider, model, prompt_version, rendered_prompt, raw_response, parsed_output, created_at, task:tasks(id, title)",
+    "id, task_id, prompt_id, provider, model, prompt_version, parsed_output, created_at, task:tasks(id, title), prompt:prompts(id, name, version)",
     { count: "exact" },
   );
 
@@ -499,7 +501,7 @@ export async function listScoringRuns(params: ListScoringRunsParams): Promise<{
   if (error) throw new Error(error.message);
 
   const items = ((data ?? []) as Array<
-    Omit<ScoringRunWithTaskRow, "task"> & { task?: unknown }
+    Omit<ScoringRunSummaryRow, "task" | "prompt"> & { task?: unknown; prompt?: unknown }
   >).map((run) => {
     const embeddedTask = run.task;
     const task = Array.isArray(embeddedTask)
@@ -508,10 +510,48 @@ export async function listScoringRuns(params: ListScoringRunsParams): Promise<{
         ? (embeddedTask as ScoringRunTaskRef)
         : null;
 
-    return { ...(run as Omit<ScoringRunWithTaskRow, "task">), task };
+    const embeddedPrompt = run.prompt;
+    const prompt = Array.isArray(embeddedPrompt)
+      ? ((embeddedPrompt[0] as ScoringRunPromptRef | undefined) ?? null)
+      : embeddedPrompt && typeof embeddedPrompt === "object"
+        ? (embeddedPrompt as ScoringRunPromptRef)
+        : null;
+
+    return { ...(run as Omit<ScoringRunSummaryRow, "task" | "prompt">), task, prompt };
   });
 
   return { items, total: count ?? 0 };
+}
+
+export async function getScoringRunDetail(runId: string): Promise<ScoringRunDetailRow | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("scoring_runs")
+    .select(
+      "id, task_id, prompt_id, provider, model, prompt_version, rendered_prompt, raw_response, parsed_output, created_at, task:tasks(id, title), prompt:prompts(id, name, version)",
+    )
+    .eq("id", runId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  const embeddedTask = (data as { task?: unknown }).task;
+  const task = Array.isArray(embeddedTask)
+    ? ((embeddedTask[0] as ScoringRunTaskRef | undefined) ?? null)
+    : embeddedTask && typeof embeddedTask === "object"
+      ? (embeddedTask as ScoringRunTaskRef)
+      : null;
+
+  const embeddedPrompt = (data as { prompt?: unknown }).prompt;
+  const prompt = Array.isArray(embeddedPrompt)
+    ? ((embeddedPrompt[0] as ScoringRunPromptRef | undefined) ?? null)
+    : embeddedPrompt && typeof embeddedPrompt === "object"
+      ? (embeddedPrompt as ScoringRunPromptRef)
+      : null;
+
+  const run = data as Omit<ScoringRunDetailRow, "task" | "prompt">;
+  return { ...run, task, prompt };
 }
 
 export async function listPrompts(): Promise<PromptRow[]> {
