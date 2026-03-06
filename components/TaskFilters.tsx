@@ -11,6 +11,17 @@ import {
   TextInput,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
+import {
+  IconCalendarEvent,
+  IconCategory,
+  IconCheck,
+  IconCircleCheck,
+  IconGauge,
+  IconListNumbers,
+  IconSearch,
+  IconTags,
+  IconX,
+} from "@tabler/icons-react";
 import React from "react";
 
 import { formatYmdDate, parseYmdDate } from "@/lib/dates/ymd";
@@ -64,24 +75,28 @@ export function TaskFilters(props: {
   const toDate = parseYmdDate(props.value.to);
 
   return (
-    <Stack gap="sm">
-      <Grid gutter="sm">
+    <Stack gap="xs">
+      <Grid gutter="xs">
         <Grid.Col span={{ base: 12, md: 6 }}>
           <TextInput
             label="Título"
             placeholder="Título ou descrição"
             size="sm"
+            leftSection={<IconSearch size={16} />}
+            leftSectionPointerEvents="none"
             value={props.value.search}
             onChange={(e) => props.onChange({ ...props.value, search: e.currentTarget.value })}
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 3 }}>
+        <Grid.Col span={{ base: 6, md: 3 }}>
           <Select
             label="Status"
             placeholder="Todas"
             data={completionOptions}
             size="sm"
+            leftSection={<IconCircleCheck size={16} />}
+            leftSectionPointerEvents="none"
             value={props.value.completion}
             onChange={(value) =>
               props.onChange({
@@ -93,11 +108,13 @@ export function TaskFilters(props: {
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 3 }}>
+        <Grid.Col span={{ base: 6, md: 3 }}>
           <Select
             label="Categoria"
             data={categoryOptions}
             size="sm"
+            leftSection={<IconCategory size={16} />}
+            leftSectionPointerEvents="none"
             value={props.value.category}
             onChange={(value) => props.onChange({ ...props.value, category: value || "" })}
             clearable
@@ -111,6 +128,8 @@ export function TaskFilters(props: {
             placeholder="Selecione…"
             data={ALLOWED_TAG_OPTIONS}
             size="sm"
+            leftSection={<IconTags size={16} />}
+            leftSectionPointerEvents="none"
             value={props.value.tags}
             onChange={(value) => props.onChange({ ...props.value, tags: value })}
             searchable
@@ -119,7 +138,7 @@ export function TaskFilters(props: {
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 3 }}>
+        <Grid.Col span={{ base: 6, md: 3 }}>
           <NumberInput
             label="Score mín."
             placeholder="1"
@@ -128,6 +147,8 @@ export function TaskFilters(props: {
             clampBehavior="strict"
             size="sm"
             hideControls
+            leftSection={<IconGauge size={16} />}
+            leftSectionPointerEvents="none"
             value={props.value.scoreMin ?? ""}
             onChange={(value) =>
               props.onChange({
@@ -138,7 +159,7 @@ export function TaskFilters(props: {
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 3 }}>
+        <Grid.Col span={{ base: 6, md: 3 }}>
           <NumberInput
             label="Score máx."
             placeholder="10"
@@ -147,6 +168,8 @@ export function TaskFilters(props: {
             clampBehavior="strict"
             size="sm"
             hideControls
+            leftSection={<IconGauge size={16} />}
+            leftSectionPointerEvents="none"
             value={props.value.scoreMax ?? ""}
             onChange={(value) =>
               props.onChange({
@@ -157,7 +180,7 @@ export function TaskFilters(props: {
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 3 }}>
+        <Grid.Col span={{ base: 6, md: 3 }}>
           <DateInput
             label="De"
             value={fromDate}
@@ -176,10 +199,12 @@ export function TaskFilters(props: {
             maxDate={toDate ?? undefined}
             clearable
             size="sm"
+            leftSection={<IconCalendarEvent size={16} />}
+            leftSectionPointerEvents="none"
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 3 }}>
+        <Grid.Col span={{ base: 6, md: 3 }}>
           <DateInput
             label="Até"
             value={toDate}
@@ -198,14 +223,18 @@ export function TaskFilters(props: {
             minDate={fromDate ?? undefined}
             clearable
             size="sm"
+            leftSection={<IconCalendarEvent size={16} />}
+            leftSectionPointerEvents="none"
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 3 }}>
+        <Grid.Col span={{ base: 6, md: 3 }}>
           <Select
             label="Por página"
             data={pageSizeOptions}
             size="sm"
+            leftSection={<IconListNumbers size={16} />}
+            leftSectionPointerEvents="none"
             value={String(props.value.pageSize || DEFAULT_TASK_PAGE_SIZE)}
             onChange={(value) =>
               props.onChange({
@@ -217,12 +246,12 @@ export function TaskFilters(props: {
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 3 }} style={{ display: "flex", alignItems: "flex-end" }}>
-          <Group justify="flex-end" w="100%">
-            <Button size="sm" variant="default" onClick={props.onClear}>
+        <Grid.Col span={{ base: 6, md: 3 }} style={{ display: "flex", alignItems: "flex-end" }}>
+          <Group justify="flex-end" w="100%" gap="xs">
+            <Button size="xs" variant="default" leftSection={<IconX size={14} />} onClick={props.onClear}>
               Limpar
             </Button>
-            <Button size="sm" onClick={props.onApply}>
+            <Button size="xs" leftSection={<IconCheck size={14} />} onClick={props.onApply}>
               Aplicar
             </Button>
           </Group>

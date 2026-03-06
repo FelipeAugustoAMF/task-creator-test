@@ -44,4 +44,5 @@ Regras:
 - rationale: 1-2 frases; <= 300 caracteres; em português brasileiro.
 - confidence: número entre 0 e 1.
 - Não traduza os nomes das chaves do JSON: score, category, tags, rationale, confidence.
+- Se a descrição/título da tarefa não fizerem sentido ou não tiverem um contexto identificável, dê nota 1. Enfatize seu raciocínio no rationale, explicando a falta de clareza ou contexto.
 - Mesmo que a tarefa esteja em outro idioma, gere tags e rationale em português brasileiro.`;

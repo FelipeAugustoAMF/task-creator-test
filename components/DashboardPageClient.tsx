@@ -7,13 +7,23 @@ import {
   Box,
   Card,
   Collapse,
+  Divider,
   Group,
   LoadingOverlay,
   Pagination,
   Stack,
   Text,
+  ThemeIcon,
   Title,
 } from "@mantine/core";
+import {
+  IconAdjustments,
+  IconCalendar,
+  IconChevronDown,
+  IconChevronUp,
+  IconPlus,
+  IconX,
+} from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -77,9 +87,10 @@ export function DashboardPageClient(props: {
   function chipRemoveButton(params: { ariaLabel: string; onRemove: () => void }) {
     return (
       <ActionIcon
-        variant="transparent"
+        variant="subtle"
         color="red"
         size="xs"
+        radius="xl"
         aria-label={params.ariaLabel}
         onClick={(e) => {
           e.stopPropagation();
@@ -87,9 +98,7 @@ export function DashboardPageClient(props: {
         }}
         style={{ alignSelf: "center" }}
       >
-        <Text component="span" c="red" fw={700} size="xs" lh={1} style={{ display: "block" }}>
-          x
-        </Text>
+        <IconX size={14} />
       </ActionIcon>
     );
   }
@@ -214,6 +223,293 @@ export function DashboardPageClient(props: {
     pushDashboard(buildSearchParams({ page: 1, sortBy: nextBy, sortDir: nextDir }));
   }
 
+  const appliedChips = (() => {
+    const applied = props.initialFilters;
+    const appliedSort = props.initialSort;
+    const chips: React.ReactNode[] = [];
+
+    const search = applied.search?.trim();
+    if (search) {
+      const nextApplied: TaskFiltersValue = { ...applied, search: "" };
+      chips.push(
+        <Badge
+          key="search"
+          variant="light"
+          color="gray"
+          rightSection={
+            chipRemoveButton({
+              ariaLabel: "Remover filtro: Título",
+              onRemove: () => {
+                setFilters(nextApplied);
+                pushDashboard(
+                  buildSearchParamsFrom({
+                    filters: nextApplied,
+                    page: 1,
+                    sortBy: appliedSort.sortBy,
+                    sortDir: appliedSort.sortDir,
+                  }),
+                );
+              },
+            })
+          }
+          styles={chipStyles}
+        >
+          Título: {search}
+        </Badge>,
+      );
+    }
+
+    const completion = applied.completion?.trim();
+    if (completion) {
+      const completionLabel =
+        completion === "pending"
+          ? "Pendentes"
+          : completion === "completed"
+            ? "Concluídas"
+            : completion;
+      const nextApplied: TaskFiltersValue = { ...applied, completion: "" };
+      chips.push(
+        <Badge
+          key="completion"
+          variant="light"
+          color="gray"
+          rightSection={
+            chipRemoveButton({
+              ariaLabel: "Remover filtro: Status",
+              onRemove: () => {
+                setFilters(nextApplied);
+                pushDashboard(
+                  buildSearchParamsFrom({
+                    filters: nextApplied,
+                    page: 1,
+                    sortBy: appliedSort.sortBy,
+                    sortDir: appliedSort.sortDir,
+                  }),
+                );
+              },
+            })
+          }
+          styles={chipStyles}
+        >
+          Status: {completionLabel}
+        </Badge>,
+      );
+    }
+
+    const category = applied.category?.trim();
+    if (category) {
+      const categoryLabel = (SCORING_CATEGORY_LABELS as Record<string, string>)[category] || category;
+      const nextApplied: TaskFiltersValue = { ...applied, category: "" };
+      chips.push(
+        <Badge
+          key="category"
+          variant="light"
+          color="gray"
+          rightSection={
+            chipRemoveButton({
+              ariaLabel: "Remover filtro: Categoria",
+              onRemove: () => {
+                setFilters(nextApplied);
+                pushDashboard(
+                  buildSearchParamsFrom({
+                    filters: nextApplied,
+                    page: 1,
+                    sortBy: appliedSort.sortBy,
+                    sortDir: appliedSort.sortDir,
+                  }),
+                );
+              },
+            })
+          }
+          styles={chipStyles}
+        >
+          Categoria: {categoryLabel}
+        </Badge>,
+      );
+    }
+
+    if (applied.tags?.length) {
+      for (const t of applied.tags) {
+        const label = (ALLOWED_TAG_LABELS as Record<string, string>)[t] || t;
+        const nextApplied: TaskFiltersValue = { ...applied, tags: applied.tags.filter((x) => x !== t) };
+        chips.push(
+          <Badge
+            key={`tag:${t}`}
+            variant="light"
+            color="indigo"
+            rightSection={
+              chipRemoveButton({
+                ariaLabel: `Remover tag: ${label}`,
+                onRemove: () => {
+                  setFilters(nextApplied);
+                  pushDashboard(
+                    buildSearchParamsFrom({
+                      filters: nextApplied,
+                      page: 1,
+                      sortBy: appliedSort.sortBy,
+                      sortDir: appliedSort.sortDir,
+                    }),
+                  );
+                },
+              })
+            }
+            styles={chipStyles}
+          >
+            {label}
+          </Badge>,
+        );
+      }
+    }
+
+    const scoreMin = applied.scoreMin;
+    const scoreMax = applied.scoreMax;
+    if (typeof scoreMin === "number" || typeof scoreMax === "number") {
+      const scoreLabel =
+        typeof scoreMin === "number" && typeof scoreMax === "number"
+          ? `${scoreMin}–${scoreMax}`
+          : typeof scoreMin === "number"
+            ? `≥ ${scoreMin}`
+            : `≤ ${scoreMax}`;
+
+      const nextApplied: TaskFiltersValue = { ...applied, scoreMin: undefined, scoreMax: undefined };
+      chips.push(
+        <Badge
+          key="score"
+          variant="light"
+          color="gray"
+          rightSection={
+            chipRemoveButton({
+              ariaLabel: "Remover filtro: Score",
+              onRemove: () => {
+                setFilters(nextApplied);
+                pushDashboard(
+                  buildSearchParamsFrom({
+                    filters: nextApplied,
+                    page: 1,
+                    sortBy: appliedSort.sortBy,
+                    sortDir: appliedSort.sortDir,
+                  }),
+                );
+              },
+            })
+          }
+          styles={chipStyles}
+        >
+          Score: {scoreLabel}
+        </Badge>,
+      );
+    }
+
+    const from = applied.from?.trim();
+    const to = applied.to?.trim();
+    if (from || to) {
+      const dateLabel = from && to ? `${from} → ${to}` : from ? `≥ ${from}` : `≤ ${to}`;
+      const nextApplied: TaskFiltersValue = { ...applied, from: "", to: "" };
+      chips.push(
+        <Badge
+          key="date"
+          variant="light"
+          color="gray"
+          rightSection={
+            chipRemoveButton({
+              ariaLabel: "Remover filtro: Data",
+              onRemove: () => {
+                setFilters(nextApplied);
+                pushDashboard(
+                  buildSearchParamsFrom({
+                    filters: nextApplied,
+                    page: 1,
+                    sortBy: appliedSort.sortBy,
+                    sortDir: appliedSort.sortDir,
+                  }),
+                );
+              },
+            })
+          }
+          styles={chipStyles}
+        >
+          Data: {dateLabel}
+        </Badge>,
+      );
+    }
+
+    if ((applied.pageSize || DEFAULT_TASK_PAGE_SIZE) !== DEFAULT_TASK_PAGE_SIZE) {
+      const nextApplied: TaskFiltersValue = { ...applied, pageSize: DEFAULT_TASK_PAGE_SIZE };
+      chips.push(
+        <Badge
+          key="pageSize"
+          variant="light"
+          color="gray"
+          rightSection={
+            chipRemoveButton({
+              ariaLabel: "Remover filtro: Resultados por página",
+              onRemove: () => {
+                setFilters(nextApplied);
+                pushDashboard(
+                  buildSearchParamsFrom({
+                    filters: nextApplied,
+                    page: 1,
+                    sortBy: appliedSort.sortBy,
+                    sortDir: appliedSort.sortDir,
+                  }),
+                );
+              },
+            })
+          }
+          styles={chipStyles}
+        >
+          Por página: {applied.pageSize}
+        </Badge>,
+      );
+    }
+
+    if (appliedSort.sortBy !== DEFAULT_TASK_SORT_BY || appliedSort.sortDir !== DEFAULT_TASK_SORT_DIR) {
+      const sortByLabelMap: Record<TaskSortBy, string> = {
+        created_at: "Data",
+        score: "Score",
+        title: "Título",
+      };
+      const dirSymbol = appliedSort.sortDir === "asc" ? "↑" : "↓";
+      chips.push(
+        <Badge
+          key="sort"
+          variant="light"
+          color="gray"
+          rightSection={
+            chipRemoveButton({
+              ariaLabel: "Remover ordenação personalizada",
+              onRemove: () => {
+                setSortBy(DEFAULT_TASK_SORT_BY);
+                setSortDir(DEFAULT_TASK_SORT_DIR);
+                pushDashboard(
+                  buildSearchParamsFrom({
+                    filters: applied,
+                    page: 1,
+                    sortBy: DEFAULT_TASK_SORT_BY,
+                    sortDir: DEFAULT_TASK_SORT_DIR,
+                  }),
+                );
+              },
+            })
+          }
+          styles={chipStyles}
+        >
+          Ordenação: {sortByLabelMap[appliedSort.sortBy]} {dirSymbol}
+        </Badge>,
+      );
+    }
+
+    return chips;
+  })();
+
+  const appliedChipsCount = appliedChips.length;
+  const filtersSubtitle =
+    appliedChipsCount === 0
+      ? "Nenhum filtro aplicado. Clique para filtrar."
+      : appliedChipsCount === 1
+        ? "1 filtro ativo. Clique para editar."
+        : `${appliedChipsCount} filtros ativos. Clique para editar.`;
+
   return (
     <Box pos="relative" mih="100vh">
       <LoadingOverlay
@@ -232,357 +528,86 @@ export function DashboardPageClient(props: {
           </Text>
         </Stack>
 
-        <Button onClick={() => setModalOpen(true)} leftSection="+">
+        <Button onClick={() => setModalOpen(true)} leftSection={<IconPlus size={16} />}>
           Nova tarefa
         </Button>
       </Group>
 
-      <Card
-        withBorder
-      >
-        <Group
-          justify="space-between"
-          align="center"
+      <Card withBorder radius="md" padding={0}>
+        <Box
+          px="md"
+          py="sm"
+          role="button"
+          tabIndex={0}
+          aria-expanded={filtersOpen}
+          aria-controls="task-filters-panel"
           onClick={() => setFiltersOpen((v) => !v)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setFiltersOpen((v) => !v);
+            }
+          }}
           style={{ cursor: "pointer" }}
         >
-          <Text fw={600}>Filtros</Text>
-          <Group gap="xs">
-            <Button
-              size="xs"
-              variant={todayOnlyApplied ? "filled" : "default"}
-              radius="xl"
-              aria-pressed={todayOnlyApplied}
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleTodayOnly();
-              }}
-            >
-              Tarefas de Hoje
-            </Button>
-            <ActionIcon
-              variant="subtle"
-              aria-label={filtersOpen ? "Recolher filtros" : "Expandir filtros"}
-            >
-              {filtersOpen ? "▲" : "▼"}
-            </ActionIcon>
-          </Group>
-        </Group>
-
-        <Group gap={8} mt="sm" wrap="wrap">
-          {(() => {
-            const applied = props.initialFilters;
-            const appliedSort = props.initialSort;
-            const chips: React.ReactNode[] = [];
-
-            const search = applied.search?.trim();
-            if (search) {
-              const nextApplied: TaskFiltersValue = { ...applied, search: "" };
-              chips.push(
-                <Badge
-                  key="search"
-                  variant="light"
-                  color="gray"
-                  rightSection={
-                    chipRemoveButton({
-                      ariaLabel: "Remover filtro: Título",
-                      onRemove: () => {
-                        setFilters(nextApplied);
-                        pushDashboard(
-                          buildSearchParamsFrom({
-                            filters: nextApplied,
-                            page: 1,
-                            sortBy: appliedSort.sortBy,
-                            sortDir: appliedSort.sortDir,
-                          }),
-                        );
-                      },
-                    })
-                  }
-                  styles={chipStyles}
-                >
-                  Título: {search}
-                </Badge>,
-              );
-            }
-
-            const completion = applied.completion?.trim();
-            if (completion) {
-              const completionLabel =
-                completion === "pending"
-                  ? "Pendentes"
-                  : completion === "completed"
-                    ? "Concluídas"
-                    : completion;
-              const nextApplied: TaskFiltersValue = { ...applied, completion: "" };
-              chips.push(
-                <Badge
-                  key="completion"
-                  variant="light"
-                  color="gray"
-                  rightSection={
-                    chipRemoveButton({
-                      ariaLabel: "Remover filtro: Status",
-                      onRemove: () => {
-                        setFilters(nextApplied);
-                        pushDashboard(
-                          buildSearchParamsFrom({
-                            filters: nextApplied,
-                            page: 1,
-                            sortBy: appliedSort.sortBy,
-                            sortDir: appliedSort.sortDir,
-                          }),
-                        );
-                      },
-                    })
-                  }
-                  styles={chipStyles}
-                >
-                  Status: {completionLabel}
-                </Badge>,
-              );
-            }
-
-            const category = applied.category?.trim();
-            if (category) {
-              const categoryLabel =
-                (SCORING_CATEGORY_LABELS as Record<string, string>)[category] || category;
-              const nextApplied: TaskFiltersValue = { ...applied, category: "" };
-              chips.push(
-                <Badge
-                  key="category"
-                  variant="light"
-                  color="gray"
-                  rightSection={
-                    chipRemoveButton({
-                      ariaLabel: "Remover filtro: Categoria",
-                      onRemove: () => {
-                        setFilters(nextApplied);
-                        pushDashboard(
-                          buildSearchParamsFrom({
-                            filters: nextApplied,
-                            page: 1,
-                            sortBy: appliedSort.sortBy,
-                            sortDir: appliedSort.sortDir,
-                          }),
-                        );
-                      },
-                    })
-                  }
-                  styles={chipStyles}
-                >
-                  Categoria: {categoryLabel}
-                </Badge>,
-              );
-            }
-
-            if (applied.tags?.length) {
-              for (const t of applied.tags) {
-                const label = (ALLOWED_TAG_LABELS as Record<string, string>)[t] || t;
-                const nextApplied: TaskFiltersValue = {
-                  ...applied,
-                  tags: applied.tags.filter((x) => x !== t),
-                };
-                chips.push(
-                  <Badge
-                    key={`tag:${t}`}
-                    variant="light"
-                    color="indigo"
-                    rightSection={
-                      chipRemoveButton({
-                        ariaLabel: `Remover tag: ${label}`,
-                        onRemove: () => {
-                          setFilters(nextApplied);
-                          pushDashboard(
-                            buildSearchParamsFrom({
-                              filters: nextApplied,
-                              page: 1,
-                              sortBy: appliedSort.sortBy,
-                              sortDir: appliedSort.sortDir,
-                            }),
-                          );
-                        },
-                      })
-                    }
-                    styles={chipStyles}
-                  >
-                    {label}
-                  </Badge>,
-                );
-              }
-            }
-
-            const scoreMin = applied.scoreMin;
-            const scoreMax = applied.scoreMax;
-            if (typeof scoreMin === "number" || typeof scoreMax === "number") {
-              const scoreLabel =
-                typeof scoreMin === "number" && typeof scoreMax === "number"
-                  ? `${scoreMin}–${scoreMax}`
-                  : typeof scoreMin === "number"
-                    ? `≥ ${scoreMin}`
-                    : `≤ ${scoreMax}`;
-
-              const nextApplied: TaskFiltersValue = {
-                ...applied,
-                scoreMin: undefined,
-                scoreMax: undefined,
-              };
-              chips.push(
-                <Badge
-                  key="score"
-                  variant="light"
-                  color="gray"
-                  rightSection={
-                    chipRemoveButton({
-                      ariaLabel: "Remover filtro: Score",
-                      onRemove: () => {
-                        setFilters(nextApplied);
-                        pushDashboard(
-                          buildSearchParamsFrom({
-                            filters: nextApplied,
-                            page: 1,
-                            sortBy: appliedSort.sortBy,
-                            sortDir: appliedSort.sortDir,
-                          }),
-                        );
-                      },
-                    })
-                  }
-                  styles={chipStyles}
-                >
-                  Score: {scoreLabel}
-                </Badge>,
-              );
-            }
-
-            const from = applied.from?.trim();
-            const to = applied.to?.trim();
-            if (from || to) {
-              const dateLabel = from && to ? `${from} → ${to}` : from ? `≥ ${from}` : `≤ ${to}`;
-              const nextApplied: TaskFiltersValue = { ...applied, from: "", to: "" };
-              chips.push(
-                <Badge
-                  key="date"
-                  variant="light"
-                  color="gray"
-                  rightSection={
-                    chipRemoveButton({
-                      ariaLabel: "Remover filtro: Data",
-                      onRemove: () => {
-                        setFilters(nextApplied);
-                        pushDashboard(
-                          buildSearchParamsFrom({
-                            filters: nextApplied,
-                            page: 1,
-                            sortBy: appliedSort.sortBy,
-                            sortDir: appliedSort.sortDir,
-                          }),
-                        );
-                      },
-                    })
-                  }
-                  styles={chipStyles}
-                >
-                  Data: {dateLabel}
-                </Badge>,
-              );
-            }
-
-            if (
-              (applied.pageSize || DEFAULT_TASK_PAGE_SIZE) !== DEFAULT_TASK_PAGE_SIZE
-            ) {
-              const nextApplied: TaskFiltersValue = {
-                ...applied,
-                pageSize: DEFAULT_TASK_PAGE_SIZE,
-              };
-              chips.push(
-                <Badge
-                  key="pageSize"
-                  variant="light"
-                  color="gray"
-                  rightSection={
-                    chipRemoveButton({
-                      ariaLabel: "Remover filtro: Resultados por página",
-                      onRemove: () => {
-                        setFilters(nextApplied);
-                        pushDashboard(
-                          buildSearchParamsFrom({
-                            filters: nextApplied,
-                            page: 1,
-                            sortBy: appliedSort.sortBy,
-                            sortDir: appliedSort.sortDir,
-                          }),
-                        );
-                      },
-                    })
-                  }
-                  styles={chipStyles}
-                >
-                  Por página: {applied.pageSize}
-                </Badge>,
-              );
-            }
-
-            if (
-              appliedSort.sortBy !== DEFAULT_TASK_SORT_BY ||
-              appliedSort.sortDir !== DEFAULT_TASK_SORT_DIR
-            ) {
-              const sortByLabelMap: Record<TaskSortBy, string> = {
-                created_at: "Data",
-                score: "Score",
-                title: "Título",
-              };
-              const dirSymbol = appliedSort.sortDir === "asc" ? "↑" : "↓";
-              chips.push(
-                <Badge
-                  key="sort"
-                  variant="light"
-                  color="gray"
-                  rightSection={
-                    chipRemoveButton({
-                      ariaLabel: "Remover ordenação personalizada",
-                      onRemove: () => {
-                        setSortBy(DEFAULT_TASK_SORT_BY);
-                        setSortDir(DEFAULT_TASK_SORT_DIR);
-                        pushDashboard(
-                          buildSearchParamsFrom({
-                            filters: applied,
-                            page: 1,
-                            sortBy: DEFAULT_TASK_SORT_BY,
-                            sortDir: DEFAULT_TASK_SORT_DIR,
-                          }),
-                        );
-                      },
-                    })
-                  }
-                  styles={chipStyles}
-                >
-                  Ordenação: {sortByLabelMap[appliedSort.sortBy]} {dirSymbol}
-                </Badge>,
-              );
-            }
-
-            if (chips.length === 0) {
-              return (
-                <Text key="none" c="dimmed" size="sm">
-                  Nenhum filtro aplicado.
+          <Group justify="space-between" align="center" wrap="wrap">
+            <Group gap="sm" wrap="nowrap">
+              <ThemeIcon variant="light" color="indigo" radius="md">
+                <IconAdjustments size={18} />
+              </ThemeIcon>
+              <Box>
+                <Group gap="xs">
+                  <Text fw={600}>Filtros</Text>
+                  {appliedChipsCount ? (
+                    <Badge size="xs" variant="light" color="indigo">
+                      {appliedChipsCount}
+                    </Badge>
+                  ) : null}
+                </Group>
+                <Text size="xs" c="dimmed">
+                  {filtersSubtitle}
                 </Text>
-              );
-            }
+              </Box>
+            </Group>
 
-            return chips;
-          })()}
-        </Group>
+            <Group gap="xs">
+              <Button
+                size="xs"
+                variant={todayOnlyApplied ? "filled" : "light"}
+                color="indigo"
+                radius="xl"
+                leftSection={<IconCalendar size={14} />}
+                aria-pressed={todayOnlyApplied}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleTodayOnly();
+                }}
+              >
+                Tarefas de Hoje
+              </Button>
+              <ActionIcon
+                variant="subtle"
+                aria-label={filtersOpen ? "Recolher filtros" : "Expandir filtros"}
+              >
+                {filtersOpen ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
+              </ActionIcon>
+            </Group>
+          </Group>
+        </Box>
+
+        {appliedChipsCount ? (
+          <Box px="md" pb="sm">
+            <Group gap={8} wrap="wrap">
+              {appliedChips}
+            </Group>
+          </Box>
+        ) : null}
 
         <Collapse in={filtersOpen}>
-          <Stack mt="md">
-            <TaskFilters
-              value={filters}
-              onChange={setFilters}
-              onApply={applyFilters}
-              onClear={clearFilters}
-            />
-          </Stack>
+          <Divider />
+          <Box id="task-filters-panel" px="md" py="md">
+            <TaskFilters value={filters} onChange={setFilters} onApply={applyFilters} onClear={clearFilters} />
+          </Box>
         </Collapse>
       </Card>
 
