@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Affix,
   ActionIcon,
   Badge,
   Button,
@@ -12,10 +13,12 @@ import {
   LoadingOverlay,
   Pagination,
   Stack,
+  Transition,
   Text,
   ThemeIcon,
   Title,
 } from "@mantine/core";
+import { useMediaQuery, useWindowScroll } from "@mantine/hooks";
 import {
   IconAdjustments,
   IconCalendar,
@@ -55,6 +58,8 @@ export function DashboardPageClient(props: {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [taskOpening, setTaskOpening] = useState(false);
+  const isCompact = useMediaQuery("(max-width: 36em)");
+  const [scroll] = useWindowScroll();
   const todayDate = useMemo(() => {
     const now = new Date();
     const yyyy = String(now.getFullYear());
@@ -508,7 +513,9 @@ export function DashboardPageClient(props: {
       ? "Nenhum filtro aplicado. Clique para filtrar."
       : appliedChipsCount === 1
         ? "1 filtro ativo. Clique para editar."
-        : `${appliedChipsCount} filtros ativos. Clique para editar.`;
+      : `${appliedChipsCount} filtros ativos. Clique para editar.`;
+
+  const showFloatingCreate = scroll.y > 160;
 
   return (
     <Box pos="relative" mih="100vh">
@@ -518,6 +525,36 @@ export function DashboardPageClient(props: {
         overlayProps={{ backgroundOpacity: 0.35, blur: 2 }}
         loaderProps={{ color: "indigo", size: "lg" }}
       />
+
+      <Affix position={{ bottom: 20, right: 20 }} zIndex={2000}>
+        <Transition mounted={showFloatingCreate} transition="slide-up" duration={200} timingFunction="ease">
+          {(styles) =>
+            isCompact ? (
+              <ActionIcon
+                variant="filled"
+                color="indigo"
+                radius="xl"
+                size="xl"
+                aria-label="Nova tarefa"
+                style={styles}
+                onClick={() => setModalOpen(true)}
+              >
+                <IconPlus size={20} />
+              </ActionIcon>
+            ) : (
+              <Button
+                leftSection={<IconPlus size={16} />}
+                radius="xl"
+                color="indigo"
+                style={styles}
+                onClick={() => setModalOpen(true)}
+              >
+                Nova tarefa
+              </Button>
+            )
+          }
+        </Transition>
+      </Affix>
 
       <Stack gap="md">
       <Group justify="space-between" align="flex-end">

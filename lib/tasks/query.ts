@@ -5,7 +5,7 @@ export type TaskSortDir = "asc" | "desc";
 
 export const DEFAULT_TASK_SORT_BY: TaskSortBy = "created_at";
 export const DEFAULT_TASK_SORT_DIR: TaskSortDir = "desc";
-export const DEFAULT_TASK_PAGE_SIZE = 20;
+export const DEFAULT_TASK_PAGE_SIZE = 10;
 
 export function coerceTaskSortBy(input: unknown): TaskSortBy | undefined {
   if (typeof input !== "string") return undefined;

@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import { requireAppApiKey } from "@/lib/api/auth";
 import { coerceAllowedTag } from "@/lib/scoring/taxonomy";
-import { coerceTaskSortBy, coerceTaskSortDir } from "@/lib/tasks/query";
+import {
+  coerceTaskSortBy,
+  coerceTaskSortDir,
+  DEFAULT_TASK_PAGE_SIZE,
+} from "@/lib/tasks/query";
 import { createTaskAndScore, listTasks } from "@/lib/tasks/service";
 
 export const runtime = "nodejs";
@@ -60,7 +64,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
 
     const page = Math.max(1, Number(searchParams.get("page") || "1") || 1);
-    const pageSizeRaw = Number(searchParams.get("pageSize") || "20") || 20;
+    const pageSizeRaw =
+      Number(searchParams.get("pageSize") || String(DEFAULT_TASK_PAGE_SIZE)) ||
+      DEFAULT_TASK_PAGE_SIZE;
     const pageSize = Math.min(100, Math.max(1, pageSizeRaw));
 
     const scoreMinRaw = searchParams.get("scoreMin");
