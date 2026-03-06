@@ -9,6 +9,7 @@ import {
   Text,
   UnstyledButton,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -33,6 +34,17 @@ function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString("pt-BR");
+}
+
+function formatDateCompact(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatCategory(value: string) {
@@ -89,6 +101,7 @@ export function TaskTable(props: {
   onOpenTask?: (taskId: string) => void;
 }) {
   const router = useRouter();
+  const isCompact = useMediaQuery("(max-width: 36em)");
 
   function taskDetailsHref(taskId: string) {
     return props.returnTo
@@ -115,16 +128,20 @@ export function TaskTable(props: {
               dir={props.sortDir}
               onChange={props.onSortChange}
             />
-            <Table.Th>
-              <Text fw={600} size="sm">
-                Categoria
-              </Text>
-            </Table.Th>
-            <Table.Th>
-              <Text fw={600} size="sm">
-                Tags
-              </Text>
-            </Table.Th>
+            {!isCompact ? (
+              <Table.Th>
+                <Text fw={600} size="sm">
+                  Categoria
+                </Text>
+              </Table.Th>
+            ) : null}
+            {!isCompact ? (
+              <Table.Th>
+                <Text fw={600} size="sm">
+                  Tags
+                </Text>
+              </Table.Th>
+            ) : null}
             <SortableTh
               label="Criada em"
               by="created_at"
@@ -137,7 +154,7 @@ export function TaskTable(props: {
         <Table.Tbody>
           {props.tasks.length === 0 ? (
             <Table.Tr>
-              <Table.Td colSpan={5}>
+              <Table.Td colSpan={isCompact ? 3 : 5}>
                 <Text c="dimmed" size="sm">
                   Nenhuma tarefa encontrada.
                 </Text>
@@ -208,33 +225,39 @@ export function TaskTable(props: {
                     </Badge>
                   </Group>
                 </Table.Td>
-                <Table.Td>
-                  {task.category ? (
-                    <Badge color="gray" variant="light">
-                      {formatCategory(task.category)}
-                    </Badge>
-                  ) : (
-                    <Text c="dimmed" size="sm">
-                      —
-                    </Text>
-                  )}
-                </Table.Td>
-                <Table.Td>
-                  <Group gap={6} wrap="wrap">
-                    {task.tags?.length ? (
-                      task.tags.map((tag) => (
-                        <Badge key={tag} size="sm" variant="outline">
-                          {formatTag(tag)}
-                        </Badge>
-                      ))
+                {!isCompact ? (
+                  <Table.Td>
+                    {task.category ? (
+                      <Badge color="gray" variant="light">
+                        {formatCategory(task.category)}
+                      </Badge>
                     ) : (
                       <Text c="dimmed" size="sm">
                         —
                       </Text>
                     )}
-                  </Group>
+                  </Table.Td>
+                ) : null}
+                {!isCompact ? (
+                  <Table.Td>
+                    <Group gap={6} wrap="wrap">
+                      {task.tags?.length ? (
+                        task.tags.map((tag) => (
+                          <Badge key={tag} size="sm" variant="outline">
+                            {formatTag(tag)}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Text c="dimmed" size="sm">
+                          —
+                        </Text>
+                      )}
+                    </Group>
+                  </Table.Td>
+                ) : null}
+                <Table.Td>
+                  {isCompact ? formatDateCompact(task.created_at) : formatDate(task.created_at)}
                 </Table.Td>
-                <Table.Td>{formatDate(task.created_at)}</Table.Td>
               </Table.Tr>
             ))
           )}

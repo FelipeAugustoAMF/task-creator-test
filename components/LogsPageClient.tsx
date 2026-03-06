@@ -22,6 +22,7 @@ import {
   Title,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
+import { useMediaQuery } from "@mantine/hooks";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState, useTransition } from "react";
@@ -40,6 +41,17 @@ function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString("pt-BR");
+}
+
+function formatDateCompact(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function getScoreFromParsed(parsed: unknown): number | null {
@@ -70,6 +82,7 @@ export function LogsPageClient(props: {
   const [isPending, startTransition] = useTransition();
   const fromDate = useMemo(() => parseYmdDate(filters.from), [filters.from]);
   const toDate = useMemo(() => parseYmdDate(filters.to), [filters.to]);
+  const isCompact = useMediaQuery("(max-width: 36em)");
 
   useEffect(() => {
     setFilters(props.initialFilters);
@@ -248,16 +261,16 @@ export function LogsPageClient(props: {
               <Table.Tr>
                 <Table.Th>Data</Table.Th>
                 <Table.Th>Tarefa</Table.Th>
-                <Table.Th>Modelo</Table.Th>
-                <Table.Th>Prompt</Table.Th>
+                {!isCompact ? <Table.Th>Modelo</Table.Th> : null}
+                {!isCompact ? <Table.Th>Prompt</Table.Th> : null}
                 <Table.Th>Resultado</Table.Th>
-                <Table.Th />
+                {!isCompact ? <Table.Th /> : null}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {props.items.length === 0 ? (
                 <Table.Tr>
-                  <Table.Td colSpan={6}>
+                  <Table.Td colSpan={isCompact ? 3 : 6}>
                     <Text c="dimmed" size="sm">
                       Nenhum log encontrado.
                     </Text>
@@ -267,33 +280,78 @@ export function LogsPageClient(props: {
                 props.items.map((run) => {
                   const score = getScoreFromParsed(run.parsed_output);
                   return (
-                    <Table.Tr key={run.id}>
-                      <Table.Td>{formatDate(run.created_at)}</Table.Td>
-                      <Table.Td>
-                        <Anchor
-                          component={Link}
-                          href={
-                            returnTo
-                              ? `/dashboard/tasks/${run.task_id}?returnTo=${encodeURIComponent(returnTo)}`
-                              : `/dashboard/tasks/${run.task_id}`
+                    <Table.Tr
+                      key={run.id}
+                      onClick={(e) => {
+                        if (!isCompact) return;
+                        if (e.defaultPrevented) return;
+                        if (e.button !== 0) return;
+
+                        const target = e.target;
+                        if (target instanceof Element) {
+                          if (target.closest("a,button,input,textarea,select,[role='button']")) {
+                            return;
                           }
-                        >
-                          {run.task?.title || run.task_id}
-                        </Anchor>
+                        }
+
+                        setSelected(run);
+                      }}
+                      onKeyDown={(e) => {
+                        if (!isCompact) return;
+                        if (e.key !== "Enter") return;
+                        e.preventDefault();
+                        setSelected(run);
+                      }}
+                      tabIndex={isCompact ? 0 : undefined}
+                      role={isCompact ? "button" : undefined}
+                      aria-label={isCompact ? `Ver log: ${run.task?.title || run.task_id}` : undefined}
+                      style={isCompact ? { cursor: "pointer" } : undefined}
+                    >
+                      <Table.Td>
+                        {isCompact ? formatDateCompact(run.created_at) : formatDate(run.created_at)}
                       </Table.Td>
                       <Table.Td>
-                        <Group gap="xs">
-                          <Badge variant="light">{run.provider}</Badge>
+                        <Stack gap={4}>
+                          <Anchor
+                            component={Link}
+                            href={
+                              returnTo
+                                ? `/dashboard/tasks/${run.task_id}?returnTo=${encodeURIComponent(returnTo)}`
+                                : `/dashboard/tasks/${run.task_id}`
+                            }
+                          >
+                            {run.task?.title || run.task_id}
+                          </Anchor>
+
+                          {isCompact ? (
+                            <Group gap={6} wrap="wrap">
+                              <Badge size="xs" variant="light" color="gray">
+                                {run.model}
+                              </Badge>
+                              <Badge size="xs" variant="light" color="gray">
+                                v{run.prompt_version}
+                              </Badge>
+                            </Group>
+                          ) : null}
+                        </Stack>
+                      </Table.Td>
+                      {!isCompact ? (
+                        <Table.Td>
+                          <Group gap="xs">
+                            <Badge variant="light">{run.provider}</Badge>
+                            <Badge variant="light" color="gray">
+                              {run.model}
+                            </Badge>
+                          </Group>
+                        </Table.Td>
+                      ) : null}
+                      {!isCompact ? (
+                        <Table.Td>
                           <Badge variant="light" color="gray">
-                            {run.model}
+                            v{run.prompt_version}
                           </Badge>
-                        </Group>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge variant="light" color="gray">
-                          v{run.prompt_version}
-                        </Badge>
-                      </Table.Td>
+                        </Table.Td>
+                      ) : null}
                       <Table.Td>
                         {score == null ? (
                           <Badge color="red" variant="light">
@@ -305,11 +363,13 @@ export function LogsPageClient(props: {
                           </Badge>
                         )}
                       </Table.Td>
-                      <Table.Td>
-                        <Button size="xs" variant="default" onClick={() => setSelected(run)}>
-                          Ver
-                        </Button>
-                      </Table.Td>
+                      {!isCompact ? (
+                        <Table.Td>
+                          <Button size="xs" variant="default" onClick={() => setSelected(run)}>
+                            Ver
+                          </Button>
+                        </Table.Td>
+                      ) : null}
                     </Table.Tr>
                   );
                 })
