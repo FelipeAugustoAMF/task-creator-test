@@ -13,10 +13,8 @@ import {
   LoadingOverlay,
   Modal,
   Pagination,
-  ScrollArea,
   Select,
   Stack,
-  Table,
   Text,
   Textarea,
   Title,
@@ -254,120 +252,94 @@ export function LogsPageClient(props: {
         </Collapse>
       </Card>
 
-      <Card withBorder p={0}>
-        <ScrollArea>
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Data</Table.Th>
-                <Table.Th>Tarefa</Table.Th>
-                {!isCompact ? <Table.Th>Modelo</Table.Th> : null}
-                {!isCompact ? <Table.Th>Prompt</Table.Th> : null}
-                <Table.Th>Resultado</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {props.items.length === 0 ? (
-                <Table.Tr>
-                  <Table.Td colSpan={isCompact ? 3 : 5}>
-                    <Text c="dimmed" size="sm">
-                      Nenhum log encontrado.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              ) : (
-                props.items.map((run) => {
-                  const score = getScoreFromParsed(run.parsed_output);
-                  return (
-                    <Table.Tr
-                      key={run.id}
-                      onClick={(e) => {
-                        if (e.defaultPrevented) return;
-                        if (e.button !== 0) return;
+      {props.items.length === 0 ? (
+        <Card withBorder>
+          <Text c="dimmed" size="sm">
+            Nenhum log encontrado.
+          </Text>
+        </Card>
+      ) : (
+        <Stack gap="sm">
+          {props.items.map((run) => {
+            const score = getScoreFromParsed(run.parsed_output);
+            const taskHref = returnTo
+              ? `/dashboard/tasks/${run.task_id}?returnTo=${encodeURIComponent(returnTo)}`
+              : `/dashboard/tasks/${run.task_id}`;
 
-                        const target = e.target;
-                        if (target instanceof Element) {
-                          if (target.closest("a,button,input,textarea,select,[role='button']")) {
-                            return;
-                          }
-                        }
+            return (
+              <Card
+                key={run.id}
+                withBorder
+                radius="md"
+                padding="md"
+                role="button"
+                tabIndex={0}
+                aria-label={`Ver log: ${run.task?.title || run.task_id}`}
+                style={{ cursor: "pointer" }}
+                onClick={(e) => {
+                  if (e.defaultPrevented) return;
+                  if (e.button !== 0) return;
 
-                        setSelected(run);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key !== "Enter" && e.key !== " ") return;
-                        e.preventDefault();
-                        setSelected(run);
-                      }}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`Ver log: ${run.task?.title || run.task_id}`}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <Table.Td>
+                  const target = e.target;
+                  if (target instanceof Element) {
+                    if (target.closest("a,button,input,textarea,select,[role='button']")) {
+                      return;
+                    }
+                  }
+
+                  setSelected(run);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter" && e.key !== " ") return;
+                  e.preventDefault();
+                  setSelected(run);
+                }}
+              >
+                <Stack gap={8}>
+                  <Group justify="space-between" align="flex-start" wrap="nowrap">
+                    <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+                      <Anchor
+                        component={Link}
+                        href={taskHref}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ fontWeight: 600 }}
+                        lineClamp={1}
+                      >
+                        {run.task?.title || run.task_id}
+                      </Anchor>
+                      <Text size="xs" c="dimmed">
                         {isCompact ? formatDateCompact(run.created_at) : formatDate(run.created_at)}
-                      </Table.Td>
-                      <Table.Td>
-                        <Stack gap={4}>
-                          <Anchor
-                            component={Link}
-                            href={
-                              returnTo
-                                ? `/dashboard/tasks/${run.task_id}?returnTo=${encodeURIComponent(returnTo)}`
-                                : `/dashboard/tasks/${run.task_id}`
-                            }
-                          >
-                            {run.task?.title || run.task_id}
-                          </Anchor>
+                      </Text>
+                    </Stack>
 
-                          {isCompact ? (
-                            <Group gap={6} wrap="wrap">
-                              <Badge size="xs" variant="light" color="gray">
-                                {run.model}
-                              </Badge>
-                              <Badge size="xs" variant="light" color="gray">
-                                v{run.prompt_version}
-                              </Badge>
-                            </Group>
-                          ) : null}
-                        </Stack>
-                      </Table.Td>
-                      {!isCompact ? (
-                        <Table.Td>
-                          <Group gap="xs">
-                            <Badge variant="light">{run.provider}</Badge>
-                            <Badge variant="light" color="gray">
-                              {run.model}
-                            </Badge>
-                          </Group>
-                        </Table.Td>
-                      ) : null}
-                      {!isCompact ? (
-                        <Table.Td>
-                          <Badge variant="light" color="gray">
-                            v{run.prompt_version}
-                          </Badge>
-                        </Table.Td>
-                      ) : null}
-                      <Table.Td>
-                        {score == null ? (
-                          <Badge color="red" variant="light">
-                            falhou
-                          </Badge>
-                        ) : (
-                          <Badge color="indigo" variant="light">
-                            score {score}
-                          </Badge>
-                          )}
-                      </Table.Td>
-                    </Table.Tr>
-                  );
-                })
-              )}
-            </Table.Tbody>
-          </Table>
-        </ScrollArea>
-      </Card>
+                    {score == null ? (
+                      <Badge color="red" variant="light">
+                        falhou
+                      </Badge>
+                    ) : (
+                      <Badge color="indigo" variant="light">
+                        score {score}
+                      </Badge>
+                    )}
+                  </Group>
+
+                  <Group gap={6} wrap="wrap">
+                    <Badge size="xs" variant="light">
+                      {run.provider}
+                    </Badge>
+                    <Badge size="xs" variant="light" color="gray">
+                      {run.model}
+                    </Badge>
+                    <Badge size="xs" variant="light" color="gray">
+                      v{run.prompt_version}
+                    </Badge>
+                  </Group>
+                </Stack>
+              </Card>
+            );
+          })}
+        </Stack>
+      )}
 
       <Group justify="center">
         <Pagination

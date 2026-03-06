@@ -590,16 +590,14 @@ export function DashboardPageClient(props: {
         Dica: clique em uma tarefa para abrir os detalhes (pode demorar alguns segundos).
       </Text>
 
-      <Card withBorder p={0}>
-        <TaskTable
-          tasks={props.items}
-          returnTo={dashboardReturnTo}
-          sortBy={sortBy}
-          sortDir={sortDir}
-          onSortChange={onSortChange}
-          onOpenTask={() => setTaskOpening(true)}
-        />
-      </Card>
+      <TaskTable
+        tasks={props.items}
+        returnTo={dashboardReturnTo}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSortChange={onSortChange}
+        onOpenTask={() => setTaskOpening(true)}
+      />
 
       <Group justify="center">
         <Pagination

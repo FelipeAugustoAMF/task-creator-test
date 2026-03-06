@@ -1,17 +1,15 @@
 "use client";
 
 import {
-  Anchor,
   Badge,
+  Button,
   Group,
-  ScrollArea,
-  Table,
+  Card,
   Text,
-  UnstyledButton,
+  Stack,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import React from "react";
 
 import { ALLOWED_TAG_LABELS, SCORING_CATEGORY_LABELS } from "@/lib/scoring/taxonomy";
@@ -63,35 +61,6 @@ function scoreColor(score: number) {
   return "green";
 }
 
-function SortableTh(props: {
-  label: string;
-  by: TaskSortBy;
-  activeBy: TaskSortBy;
-  dir: TaskSortDir;
-  onChange: (by: TaskSortBy) => void;
-}) {
-  const active = props.activeBy === props.by;
-  const indicator = active ? (props.dir === "asc" ? "▲" : "▼") : "↕";
-
-  return (
-    <Table.Th>
-      <UnstyledButton
-        onClick={() => props.onChange(props.by)}
-        style={{ width: "100%", cursor: "pointer" }}
-      >
-        <Group gap={6} wrap="nowrap" justify="space-between">
-          <Text fw={600} size="sm">
-            {props.label}
-          </Text>
-          <Text size="xs" c={active ? "dark" : "dimmed"}>
-            {indicator}
-          </Text>
-        </Group>
-      </UnstyledButton>
-    </Table.Th>
-  );
-}
-
 export function TaskTable(props: {
   tasks: TaskRow[];
   returnTo?: string;
@@ -100,8 +69,8 @@ export function TaskTable(props: {
   onSortChange: (by: TaskSortBy) => void;
   onOpenTask?: (taskId: string) => void;
 }) {
-  const router = useRouter();
   const isCompact = useMediaQuery("(max-width: 36em)");
+  const maxTags = isCompact ? 3 : 6;
 
   function taskDetailsHref(taskId: string) {
     return props.returnTo
@@ -109,113 +78,106 @@ export function TaskTable(props: {
       : `/dashboard/tasks/${taskId}`;
   }
 
+  const sortLabelMap: Record<TaskSortBy, string> = {
+    score: "Score",
+    title: "Título",
+    created_at: "Data",
+  };
+
+  function sortIndicator(by: TaskSortBy) {
+    if (props.sortBy !== by) return "↕";
+    return props.sortDir === "asc" ? "↑" : "↓";
+  }
+
+  function renderSortButton(by: TaskSortBy) {
+    const active = props.sortBy === by;
+    return (
+      <Button
+        key={by}
+        size="xs"
+        radius="xl"
+        variant={active ? "light" : "subtle"}
+        color="indigo"
+        onClick={() => props.onSortChange(by)}
+        rightSection={
+          <Text component="span" size="xs" c={active ? "indigo" : "dimmed"}>
+            {sortIndicator(by)}
+          </Text>
+        }
+      >
+        {sortLabelMap[by]}
+      </Button>
+    );
+  }
+
+  function onTaskClick(
+    event: React.MouseEvent,
+    params: { taskId: string },
+  ) {
+    if (event.defaultPrevented) return;
+    if (event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    props.onOpenTask?.(params.taskId);
+  }
+
   return (
-    <ScrollArea>
-      <Table striped highlightOnHover>
-        <Table.Thead>
-          <Table.Tr>
-            <SortableTh
-              label="Score"
-              by="score"
-              activeBy={props.sortBy}
-              dir={props.sortDir}
-              onChange={props.onSortChange}
-            />
-            <SortableTh
-              label="Título"
-              by="title"
-              activeBy={props.sortBy}
-              dir={props.sortDir}
-              onChange={props.onSortChange}
-            />
-            {!isCompact ? (
-              <Table.Th>
-                <Text fw={600} size="sm">
-                  Categoria
-                </Text>
-              </Table.Th>
-            ) : null}
-            {!isCompact ? (
-              <Table.Th>
-                <Text fw={600} size="sm">
-                  Tags
-                </Text>
-              </Table.Th>
-            ) : null}
-            <SortableTh
-              label="Criada em"
-              by="created_at"
-              activeBy={props.sortBy}
-              dir={props.sortDir}
-              onChange={props.onSortChange}
-            />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {props.tasks.length === 0 ? (
-            <Table.Tr>
-              <Table.Td colSpan={isCompact ? 3 : 5}>
-                <Text c="dimmed" size="sm">
-                  Nenhuma tarefa encontrada.
-                </Text>
-              </Table.Td>
-            </Table.Tr>
-          ) : (
-            props.tasks.map((task) => (
-              <Table.Tr
+    <Stack gap="sm">
+      <Group justify="space-between" align="center" wrap="wrap">
+        <Text fw={600} size="sm">
+          Ordenar por
+        </Text>
+        <Group gap="xs">
+          {renderSortButton("score")}
+          {renderSortButton("title")}
+          {renderSortButton("created_at")}
+        </Group>
+      </Group>
+
+      {props.tasks.length === 0 ? (
+        <Card withBorder>
+          <Text c="dimmed" size="sm">
+            Nenhuma tarefa encontrada.
+          </Text>
+        </Card>
+      ) : (
+        <Stack gap="sm">
+          {props.tasks.map((task) => {
+            const href = taskDetailsHref(task.id);
+            const taskScoreBadge =
+              task.status !== "done" ? (
+                <Badge color="red" variant="light">
+                  falhou
+                </Badge>
+              ) : (
+                <Badge color={scoreColor(task.score ?? 0)} variant="light">
+                  {task.score ?? "—"}
+                </Badge>
+              );
+
+            const shownTags = task.tags?.slice(0, maxTags) ?? [];
+            const remainingTags = Math.max(0, (task.tags?.length ?? 0) - shownTags.length);
+
+            return (
+              <Card
                 key={task.id}
-                onClick={(e) => {
-                  if (e.defaultPrevented) return;
-                  if (e.button !== 0) return;
-                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-
-                  const target = e.target;
-                  if (target instanceof Element) {
-                    if (target.closest("a,button,input,textarea,select,[role='button']")) {
-                      return;
-                    }
-                  }
-
-                  props.onOpenTask?.(task.id);
-                  router.push(taskDetailsHref(task.id));
-                }}
-                onKeyDown={(e) => {
-                  if (e.key !== "Enter") return;
-                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-                  e.preventDefault();
-                  props.onOpenTask?.(task.id);
-                  router.push(taskDetailsHref(task.id));
-                }}
-                tabIndex={0}
-                role="link"
-                aria-label={`Abrir detalhes: ${task.title}`}
-                style={{ cursor: "pointer" }}
+                component={Link}
+                href={href}
+                onClick={(e) => onTaskClick(e, { taskId: task.id })}
+                withBorder
+                radius="md"
+                padding="md"
+                style={{ textDecoration: "none", color: "inherit" }}
               >
-                <Table.Td>
-                  {task.status !== "done" ? (
-                    <Badge color="red" variant="light">
-                      falhou
-                    </Badge>
-                  ) : (
-                    <Badge color={scoreColor(task.score ?? 0)} variant="light">
-                      {task.score}
-                    </Badge>
-                  )}
-                </Table.Td>
-                <Table.Td>
-                  <Group gap="xs" wrap="nowrap">
-                    <Anchor
-                      component={Link}
-                      href={taskDetailsHref(task.id)}
-                      title="Abrir detalhes"
-                      onClick={(e) => {
-                        if (e.button !== 0) return;
-                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-                        props.onOpenTask?.(task.id);
-                      }}
-                    >
-                      {task.title}
-                    </Anchor>
+                <Stack gap={8}>
+                  <Group justify="space-between" align="flex-start" wrap="nowrap">
+                    <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
+                      {taskScoreBadge}
+                      <Text fw={600} lineClamp={1} style={{ minWidth: 0 }}>
+                        {task.title}
+                      </Text>
+                    </Group>
+
                     <Badge
                       size="xs"
                       color={task.is_completed ? "green" : "yellow"}
@@ -224,45 +186,46 @@ export function TaskTable(props: {
                       {task.is_completed ? "concluída" : "pendente"}
                     </Badge>
                   </Group>
-                </Table.Td>
-                {!isCompact ? (
-                  <Table.Td>
+
+                  <Text size="xs" c="dimmed">
+                    {isCompact ? formatDateCompact(task.created_at) : formatDate(task.created_at)}
+                  </Text>
+
+                  <Text size="sm" c="dimmed" lineClamp={2}>
+                    {task.description}
+                  </Text>
+
+                  <Group gap={6} wrap="wrap">
                     {task.category ? (
-                      <Badge color="gray" variant="light">
+                      <Badge size="xs" color="gray" variant="light">
                         {formatCategory(task.category)}
                       </Badge>
+                    ) : null}
+
+                    {shownTags.length ? (
+                      shownTags.map((tag) => (
+                        <Badge key={tag} size="xs" variant="outline">
+                          {formatTag(tag)}
+                        </Badge>
+                      ))
                     ) : (
-                      <Text c="dimmed" size="sm">
-                        —
+                      <Text size="xs" c="dimmed">
+                        Sem tags
                       </Text>
                     )}
-                  </Table.Td>
-                ) : null}
-                {!isCompact ? (
-                  <Table.Td>
-                    <Group gap={6} wrap="wrap">
-                      {task.tags?.length ? (
-                        task.tags.map((tag) => (
-                          <Badge key={tag} size="sm" variant="outline">
-                            {formatTag(tag)}
-                          </Badge>
-                        ))
-                      ) : (
-                        <Text c="dimmed" size="sm">
-                          —
-                        </Text>
-                      )}
-                    </Group>
-                  </Table.Td>
-                ) : null}
-                <Table.Td>
-                  {isCompact ? formatDateCompact(task.created_at) : formatDate(task.created_at)}
-                </Table.Td>
-              </Table.Tr>
-            ))
-          )}
-        </Table.Tbody>
-      </Table>
-    </ScrollArea>
+
+                    {remainingTags > 0 ? (
+                      <Badge size="xs" color="gray" variant="outline">
+                        +{remainingTags}
+                      </Badge>
+                    ) : null}
+                  </Group>
+                </Stack>
+              </Card>
+            );
+          })}
+        </Stack>
+      )}
+    </Stack>
   );
 }
